@@ -9,6 +9,9 @@ export let hidden: boolean = false;
 export let onClick: () => void = () => {};
 export let backgroundColor: string = 'bg-zinc-800';
 export let menu: boolean = false;
+
+// Create a variable for the hover color due to tailwindcss prerendering
+let hoverBackgroundColor = 'hover:'.concat(backgroundColor);
 </script>
 
 <!-- If menu = true, use the menu, otherwise implement the button -->
@@ -23,8 +26,8 @@ export let menu: boolean = false;
   <button
     title="{title}"
     on:click="{onClick}"
-    class="mx-1 text-gray-300 {backgroundColor} hover:text-violet-600 font-medium rounded-lg text-sm inline-flex items-center px-3 py-2 text-center"
-    class:hidden
-    ><Fa class="h-4 w-4 text-xl" icon="{icon}" />
+    class="m-0.5 text-gray-300 {hoverBackgroundColor} hover:text-violet-600 font-medium rounded-full inline-flex items-center px-2 py-2 text-center"
+    class:hidden>
+    <Fa class="h-4 w-4" icon="{icon}" />
   </button>
 {/if}
