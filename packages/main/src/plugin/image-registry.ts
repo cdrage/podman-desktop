@@ -227,11 +227,18 @@ export class ImageRegistry {
     if (exists) {
       throw new Error(`Registry ${registryCreateOptions.serverUrl} already exists`);
     }
-    await this.checkCredentials(
-      registryCreateOptions.serverUrl,
-      registryCreateOptions.username,
-      registryCreateOptions.secret,
-    );
+
+    // If we are adding an insecure registry, we have no credentials we need to check.
+    if (registryCreateOptions.insecure) {
+    } else {
+      // Check credentials of the secure registry before proceeding
+      await this.checkCredentials(
+        registryCreateOptions.serverUrl,
+        registryCreateOptions.username,
+        registryCreateOptions.secret,
+      );
+    }
+
     const registry = provider.create(registryCreateOptions);
     this.telemetryService.track('createRegistry', {
       serverUrlHash: this.getRegistryHash(registryCreateOptions),

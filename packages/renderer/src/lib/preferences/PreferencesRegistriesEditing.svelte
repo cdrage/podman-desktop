@@ -20,7 +20,8 @@ let errorResponses: { serverUrl: string; error: string }[] = [];
 let showPasswordForServerUrls: string[] = [];
 
 // show or hide new registry form
-let showNewRegistryForm = false;
+let showNewSecureRegistryForm = false;
+let showNewInsecureSecureRegistryForm = false;
 
 // at this moment it should be `podman`, but later can be any
 let defaultProviderSourceName: string;
@@ -161,7 +162,20 @@ function setNewRegistryFormVisible(visible: boolean) {
   }
 
   // Show the new registry form
-  showNewRegistryForm = visible;
+  showNewSecureRegistryForm = visible;
+}
+
+function setNewInsecureRegistryFormVisible(visible: boolean) {
+  // Hide any "suggested" registries which may be open
+  hideSuggestedRegistries();
+
+  // Cleared saved credentials before we show
+  if (!visible) {
+    clearSavedCredentials();
+  }
+
+  // Show the new registry form
+  showNewInsecureSecureRegistryForm = visible;
 }
 
 function clearSavedCredentials() {
@@ -170,6 +184,33 @@ function clearSavedCredentials() {
   newRegistryRequest.serverUrl = '';
   newRegistryRequest.username = '';
   newRegistryRequest.secret = '';
+}
+
+async function addInsecureRegistry(registry: containerDesktopAPI.Registry) {
+
+  // Set the insecure registry bit
+  registry.insecure = true;
+
+  // Get the source name
+  registry.source = defaultProviderSourceName;
+  const newRegistry = registry === newRegistryRequest;
+
+  try {
+    // Only add the registry if it doesn't exist.
+    if (newRegistry) {
+      await window.createImageRegistry(registry.source, registry);
+    }
+  } catch (error) {
+    setErrorResponse(registry.serverUrl, error.message);
+  }
+
+  if (!errorResponses.some(o => o.serverUrl === registry.serverUrl)) {
+    if (newRegistry) {
+      setNewRegistryFormVisible(false);
+    } else {
+      originRegistries = originRegistries.filter(r => r.serverUrl !== registry.serverUrl);
+    }
+  }
 }
 
 async function loginToRegistry(registry: containerDesktopAPI.Registry) {
@@ -510,7 +551,53 @@ const processPasswordElement = (node: HTMLInputElement, registry: containerDeskt
         <!-- Add new registry form end -->
       {/each}
 
-      {#if showNewRegistryForm}
+      {#if showNewInsecureSecureRegistryForm}
+        <!-- Add new registry form start -->
+        <div class="flex flex-col w-full border-t border-gray-900">
+          <div class="flex flex-row">
+            <div class="flex-1 pt-2 pl-10 pr-5 text-sm w-auto m-auto">
+              <input
+                type="text"
+                placeholder="URL (HTTP / Insecure only)"
+                bind:value="{newRegistryRequest.serverUrl}"
+                class="px-3 block w-full h-7 pr-5 mb-0.5 transition ease-in-out delay-50 bg-zinc-900 text-gray-700 placeholder-gray-700 rounded-sm focus:outline-none" />
+            </div>
+            <div class="flex pt-4 pb-2 pr-5 text-sm w-1/4">
+            </div>
+            <div class="pt-4 pb-2 text-sm w-2/5">
+              <div class="flex flex-row">
+                <div class="relative flex-1 mr-5">
+                </div>
+
+                <div class="flex text-sm">
+                  <button
+                    on:click="{() => addInsecureRegistry(newRegistryRequest)}"
+                    disabled="{!newRegistryRequest.serverUrl}"
+                    class="inline pf-c-button pf-m-primary transition ease-in-out delay-50 hover:cursor-pointer h-full rounded-md shadow hover:shadow-lg justify-center"
+                    type="button">
+                    Add
+                  </button>
+                </div>
+                <div class="flex text-sm">
+                  <button
+                    on:click="{() => setNewInsecureRegistryFormVisible(false)}"
+                    class="transition ease-in-out delay-50 hover:cursor-pointer h-full justify-center w-16"
+                    type="button">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="flex flex-row w-full pb-3 -mt-2 pl-10">
+            <span class="text-sm font-bold whitespace-pre-line">
+              {errorResponses.find(o => o.serverUrl === newRegistryRequest.serverUrl)?.error || ''}
+            </span>
+          </div>
+        </div>
+        <!-- Add new registry form end -->
+      {/if}
+      {#if showNewSecureRegistryForm}
         <!-- Add new registry form start -->
         <div class="flex flex-col w-full border-t border-gray-900">
           <div class="flex flex-row">
@@ -598,14 +685,25 @@ const processPasswordElement = (node: HTMLInputElement, registry: containerDeskt
   <!-- Spacer end -->
 
   <!-- Add new registry button start -->
-  <div class="flex justify-end py-4 px-4 w-full">
-    <button
-      on:click="{() => setNewRegistryFormVisible(true)}"
-      class="pf-c-button pf-m-primary transition ease-in-out delay-50 hover:cursor-pointer h-7 w-36 text-sm rounded-md shadow hover:shadow-lg"
-      type="button"
-      disabled="{showNewRegistryForm}">
-      Add registry
-    </button>
+  <div class="py-4 px-4 flex flex:row justify-end">
+    <div class="mr-4 text-sm italic text-gray-700">
+      <button
+        on:click="{() => setNewInsecureRegistryFormVisible(true)}"
+        class="pf-c-button transition ease-in-out delay-50 hover:cursor-pointer h-7 text-sm rounded-md shadow hover:shadow-lg"
+        type="button"
+        disabled="{showNewInsecureSecureRegistryForm}">
+        Add insecure registry
+      </button>
+    </div>
+    <div class="text-sm italic text-gray-700">
+      <button
+        on:click="{() => setNewRegistryFormVisible(true)}"
+        class="pf-c-button pf-m-primary transition ease-in-out delay-50 hover:cursor-pointer h-7 w-36 text-sm rounded-md shadow hover:shadow-lg"
+        type="button"
+        disabled="{showNewSecureRegistryForm}">
+        Add registry
+      </button>
+    </div>
   </div>
   <!-- Add new registry button end -->
 </SettingsPage>
