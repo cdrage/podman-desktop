@@ -16,6 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import * as extensionApi from '@podman-desktop/api';
 import { Disposable } from './types/disposable';
 import type * as containerDesktopAPI from '@podman-desktop/api';
 import { Emitter } from './events/emitter';
@@ -332,7 +333,7 @@ export class ImageRegistry {
     return options;
   }
 
-  async getAuthInfo(serviceUrl: string): Promise<{ authUrl: string | undefined; scheme: string }> {
+  async getAuthInfo(serviceUrl: string, ignoreCertificate?: boolean): Promise<{ authUrl: string | undefined; scheme: string }> {
     let registryUrl: string;
 
     if (serviceUrl.includes('docker.io')) {
@@ -347,27 +348,62 @@ export class ImageRegistry {
 
     let authUrl: string | undefined;
     let scheme = '';
+    let httpOptions = this.getOptions();
 
+    // Ingnore the certificate if the user has requested to do so.
+    if (ignoreCertificate) {
+      this.getOptions().https!.rejectUnauthorized = false;
+    }
+
+    // We will make a request to the server that will purposely return an authentication challenge.
     try {
       await got.get(registryUrl, this.getOptions());
     } catch (requestErr) {
+
+      // If the request error failed with a 'unable to verify the first certificate', we will ask the user if they'd like to
+      // trust the certificate and try again.
+      if (!ignoreCertificate && requestErr instanceof HTTPError && requestErr.message.includes('unable to verify the first certificate')) {
+        const result = await extensionApi.window.showWarningMessage(
+          'CAUTION! The certificate for the registry could not be verified. Would you like to ignore the certificate and try again?',
+          'Yes',
+          'Cancel',
+        );  
+        if (result === 'Yes') {
+          return this.getAuthInfo(serviceUrl, true);
+        }
+      }
+
+      // We will try to extract the authentication challenge from the response which will get our
+      // URL as well as the service (optional) and scope (also optional).
       if (requestErr instanceof HTTPError) {
+
+        // Retrieve the header from the response
         const wwwAuthenticate = requestErr.response?.headers['www-authenticate'];
+
         if (wwwAuthenticate) {
+
+          // Extract the authentication challenge from the response
+          // this is based on the Docker registry token authentication specification
+          // https://docs.docker.com/registry/spec/auth/token/
           const authInfo = this.extractAuthData(wwwAuthenticate);
           if (authInfo) {
             const url = new URL(authInfo.authUrl);
             scheme = authInfo.scheme?.toLowerCase();
-            // in case of basic auth, we use directly the registry URL
+
+            // Use basic authentication if the scheme is basic
             if (scheme === 'basic') {
               return { authUrl: registryUrl, scheme };
             }
+
+            // Return the service and scope if provided in the header
             if (authInfo.service) {
               url.searchParams.set('service', authInfo.service);
             }
             if (authInfo.scope) {
               url.searchParams.set('scope', authInfo.scope);
             }
+
+            // We finally now have the authentication URL to return.
             authUrl = url.toString();
           }
         } else {
