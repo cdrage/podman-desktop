@@ -23,8 +23,7 @@ import type * as Dockerode from 'dockerode';
 import type { Telemetry } from './telemetry/telemetry';
 import * as crypto from 'node:crypto';
 import type { HttpsOptions, OptionsOfTextResponseBody } from 'got';
-import got, { HTTPError } from 'got';
-import { RequestError } from 'got';
+import got, { Got, HTTPError, RequestError } from 'got';
 import validator from 'validator';
 import { HttpProxyAgent, HttpsProxyAgent } from 'hpagent';
 import type { Certificates } from './certificates';
@@ -219,6 +218,23 @@ export class ImageRegistry {
     });
   }
 
+  // Check the validity of the certificate for the given registry. If the certificate is invalid, return true,
+  // otherwise we ignore all other errors / exceptions and return false.
+  async isCertInvalid(url: string): Promise<boolean> {
+    console.log('running!');
+    // We only care about the headers / dont request the full registry
+    const client: Got = got.extend({ method: 'HEAD' });
+    try {
+      await client(url);
+      return false;
+    } catch (err) {
+      if (err.message.includes('unable to verify the first certificate')) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   async createRegistry(
     providerName: string,
     registryCreateOptions: containerDesktopAPI.RegistryCreateOptions,
@@ -234,11 +250,31 @@ export class ImageRegistry {
     if (exists) {
       throw new Error(`Registry ${registryCreateOptions.serverUrl} already exists`);
     }
+
+    // Check if the certificate is valid
+    if (await this.isCertInvalid(registryCreateOptions.serverUrl)) {
+      throw new Error(`Certificate for ${registryCreateOptions.serverUrl} is invalid`);
+    }
+
+    // may fail here on invalid cert..
+    // TODO: handle this better beacuse not only is it here, but also in pulling image / etc.
+    try {
     await this.checkCredentials(
       registryCreateOptions.serverUrl,
       registryCreateOptions.username,
       registryCreateOptions.secret,
     );
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('unable to verify the first certificate')) {
+        // If the certificate is invalid, we can still create the registry
+        console.log(`Certificate for ${registryCreateOptions.serverUrl} is invalid`);
+      }
+      else {
+        throw error;
+      }
+    }
+
+
     const registry = provider.create(registryCreateOptions);
     this.telemetryService.track('createRegistry', {
       serverUrlHash: this.getRegistryHash(registryCreateOptions),
