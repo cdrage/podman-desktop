@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
+import { beforeAll, beforeEach, afterEach, describe, expect, test, vi, vitest } from 'vitest';
 import type { ApiSenderType } from './api';
 
 import { ImageRegistry } from './image-registry';
@@ -31,6 +31,8 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 import * as nodeTar from 'tar';
+
+import got from 'got';
 
 let imageRegistry: ImageRegistry;
 
@@ -51,6 +53,11 @@ beforeAll(async () => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+});
+
+afterEach(() => {
+  vi.resetAllMocks();
+  vi.restoreAllMocks();
 });
 
 test('Should extract auth registry with gitlab', async () => {
@@ -360,3 +367,35 @@ test('expect downloadAndExtractImage works', async () => {
     await fs.promises.rm(destFolder, { recursive: true });
   }
 });
+
+/*
+test('test getAuthInfo returns rejectUnauthorized within options', async () => {
+
+  vi.mock('got', () => ({
+    get: vi.fn().mockReturnValue({
+      statusCode: 200,
+      body: 'foobar',
+      json: vi.fn().mockReturnValue({
+        // Mocked JSON response
+        key1: 'value1',
+        key2: 'value2',
+      }),
+    }),
+    RequestError: vi.fn(),
+    default: {
+      get: vi.fn().mockReturnValue({
+        statusCode: 200,
+        body: 'foobar',
+        json: vi.fn().mockReturnValue({
+          // Mocked JSON response
+          key1: 'value1',
+          key2: 'value2',
+        }),
+      }),
+    },
+  }));
+
+  //const authInfo = await imageRegistry.getAuthInfo('https://my-podman-desktop-fake-registry.io', true);
+
+});
+*/

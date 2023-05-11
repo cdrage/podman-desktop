@@ -233,11 +233,32 @@ export class ImageRegistry {
     if (exists) {
       throw new Error(`Registry ${registryCreateOptions.serverUrl} already exists`);
     }
+
+    // When checking credentials, we may run into a situation where the user has
+    // an invalid / insecure certificate in a development environment. We should notify
+    // the user of this, but not block them from adding the registry.
+    try {
     await this.checkCredentials(
       registryCreateOptions.serverUrl,
       registryCreateOptions.username,
       registryCreateOptions.secret,
     );
+    } catch (error) {
+    if (error instanceof Error && error.message.includes('unable to verify the first certificate')) {
+      // If the certificate is invalid, we can still create the registry
+
+      // TODO:
+      // Notify the user that the certificate is invalid.
+      // We should use extensionApi.window.showInformationMessage() to do this, but cannot since we are using plugin
+      // use showDialog as a workaround / Tim's suggestion
+      console.log(`Certificate for ${registryCreateOptions.serverUrl} is invalid`);
+    }
+    else {
+      throw error;
+    }
+  }
+
+    
     const registry = provider.create(registryCreateOptions);
     this.telemetryService.track('createRegistry', {
       serverUrlHash: this.getRegistryHash(registryCreateOptions),
@@ -620,8 +641,15 @@ export class ImageRegistry {
     return this.getManifestFromURL(manifestURL, imageData, token);
   }
 
-  async getAuthInfo(serviceUrl: string): Promise<{ authUrl: string; scheme: string }> {
+  async getAuthInfo(serviceUrl: string, ignoreInvalidCertificate?: boolean): Promise<{ authUrl: string; scheme: string }> {
     let registryUrl: string;
+    let options = this.getOptions();
+
+    // If ignoreInvalidCertificate was passed in, ignore the certificate
+    if (ignoreInvalidCertificate && options.https) {
+      options.https.rejectUnauthorized = false;
+    }
+
 
     if (serviceUrl.includes('docker.io')) {
       registryUrl = 'https://index.docker.io/v2/';
@@ -637,7 +665,8 @@ export class ImageRegistry {
     let scheme = '';
 
     try {
-      await got.get(registryUrl, this.getOptions());
+      let output = await got.get(registryUrl, this.getOptions());
+      console.log(output);
     } catch (requestErr) {
       if (requestErr instanceof HTTPError) {
         const wwwAuthenticate = requestErr.response?.headers['www-authenticate'];
