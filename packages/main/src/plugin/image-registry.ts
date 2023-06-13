@@ -25,6 +25,7 @@ import * as crypto from 'node:crypto';
 import type { HttpsOptions, OptionsOfTextResponseBody } from 'got';
 import got, { HTTPError, RequestError } from 'got';
 import validatorPkg from 'validator';
+
 // workaround for ESM
 const validator: { isURL: (url: string) => boolean } = validatorPkg as unknown as { isURL: (url: string) => boolean };
 
@@ -39,6 +40,7 @@ import * as nodeTar from 'tar';
 
 import { pipeline } from 'node:stream/promises';
 import { createWriteStream } from 'node:fs';
+import { MessageBox } from './message-box.js';
 
 export interface RegistryAuthInfo {
   authUrl: string;
@@ -242,11 +244,31 @@ export class ImageRegistry {
       if (exists) {
         throw new Error(`Registry ${registryCreateOptions.serverUrl} already exists`);
       }
-      await this.checkCredentials(
-        registryCreateOptions.serverUrl,
-        registryCreateOptions.username,
-        registryCreateOptions.secret,
-      );
+      try {
+        await this.checkCredentials(
+          registryCreateOptions.serverUrl,
+          registryCreateOptions.username,
+          registryCreateOptions.secret,
+        );
+      } catch (error) {
+        if (error instanceof Error && error.message.includes('unable to verify the first certificate')) {
+          const messageBox = new MessageBox(this.apiSender);
+          const result = await messageBox.showDialog(
+            'info',
+            'Certificate Error',
+            'The certificate for this registry is not trusted / unverifiable. Would you like to still add it?',
+            ['Yes', 'Cancel'],
+          );
+
+          // If the user does not pic yes, just throw the error / cancel the operation. 
+          // If it's Yes, we simply continue / it's added in the create call.
+          if (result !== 'Yes') { 
+            throw error;
+          }
+        } else {
+          throw error;
+        }
+      }
       const registry = provider.create(registryCreateOptions);
       return this.registerRegistry(registry);
     } catch (error) {
@@ -316,6 +338,7 @@ export class ImageRegistry {
 
     if (options.https) {
       options.https.certificateAuthority = this.certificates.getAllCertificates();
+      options.https.rejectunauthorized = false;
     }
 
     if (this.proxyEnabled) {
@@ -427,7 +450,7 @@ export class ImageRegistry {
     const imageData = this.extractImageDataFromImageName(imageName);
 
     // grab auth info from the registry
-    const authInfo = await this.getAuthInfo(imageData.registry);
+    const authInfo = await this.getAuthInfo(imageData.registry, true);
     const token = await this.getToken(authInfo, imageData);
     if (authInfo.scheme.toLowerCase() !== 'bearer') {
       throw new Error(`Unsupported auth scheme: ${authInfo.scheme}`);
@@ -467,7 +490,7 @@ export class ImageRegistry {
     const imageData = this.extractImageDataFromImageName(imageName);
 
     // grab auth info from the registry
-    const authInfo = await this.getAuthInfo(imageData.registry);
+    const authInfo = await this.getAuthInfo(imageData.registry, true);
     const token = await this.getToken(authInfo, imageData);
     if (authInfo.scheme.toLowerCase() !== 'bearer') {
       throw new Error(`Unsupported auth scheme: ${authInfo.scheme}`);
@@ -650,7 +673,16 @@ export class ImageRegistry {
     return this.getManifestFromURL(manifestURL, imageData, token);
   }
 
-  async getAuthInfo(serviceUrl: string): Promise<{ authUrl: string; scheme: string }> {
+  async getAuthInfo(serviceUrl: string, ignoreInvalidCert: boolean): Promise<{ authUrl: string; scheme: string}> {
+
+    let options = this.getOptions();
+
+    // If ignoreInvalidCertificate was passed in, ignore the certificate
+    if (ignoreInvalidCert && options.https) {
+      options.https.rejectUnauthorized = false;
+    }
+
+
     let registryUrl: string;
 
     if (serviceUrl.includes('docker.io')) {
@@ -667,7 +699,7 @@ export class ImageRegistry {
     let scheme = '';
 
     try {
-      await got.get(registryUrl, this.getOptions());
+      await got.get(registryUrl, options);
     } catch (requestErr) {
       if (requestErr instanceof HTTPError) {
         const wwwAuthenticate = requestErr.response?.headers['www-authenticate'];
@@ -718,7 +750,7 @@ export class ImageRegistry {
       throw Error('Password should not be empty.');
     }
 
-    const { authUrl, scheme } = await this.getAuthInfo(serviceUrl);
+    const { authUrl, scheme } = await this.getAuthInfo(serviceUrl, true);
 
     if (authUrl !== undefined) {
       await this.doCheckCredentials(scheme, authUrl, username, password);
