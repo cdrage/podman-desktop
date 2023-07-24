@@ -44,3 +44,14 @@ test('Simple test that compose name is displayed', async () => {
   render(ComposeDetails, { composeName: 'foobar', engineId: 'engine' });
   expect(screen.getByText('foobar')).toBeInTheDocument();
 });
+
+// Test that compose summary is clickable and loadable
+test('Simple test that compose summary is clickable and loadable', async () => {
+  render(ComposeDetails, { composeName: 'foobar', engineId: 'engine' });
+  // Click on the summary href
+  const summaryHref = screen.getByRole('link', { name: 'Summary' });
+  await fireEvent.click(summaryHref);
+
+  // Check that 'Name:' is displayed meaning it has loaded correctly.
+  expect(screen.getByText('Name:')).toBeInTheDocument();
+});
