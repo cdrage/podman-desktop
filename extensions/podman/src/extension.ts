@@ -836,14 +836,11 @@ export async function activate(extensionContext: extensionApi.ExtensionContext):
 }
 
 // Restart current machine
-export async function restartCurrentMachine(): Promise<void> {
-  // Find the machines
-  const machineListOutput = await execPromise(getPodmanCli(), ['machine', 'list', '--format', 'json']);
-  const machines = JSON.parse(machineListOutput) as MachineJSON[];
-
+export async function restartMachine(machine: string): Promise<void> {
   // Find the autostarted machine and check its status
-  const currentMachine: MachineJSON = machines.find(machine => machine?.Name === autoMachineName);
+  const currentMachine = await getCurrentMachine(machine);
 
+  console.log(autoMachineName);
   // If it's not running or starting, we can't restart it
   if (!currentMachine?.Running && !currentMachine?.Starting) {
     console.log('No machine to restart');
@@ -852,8 +849,21 @@ export async function restartCurrentMachine(): Promise<void> {
   }
 
   // Restart the current machine
-  console.log('restarting autostarted machine', autoMachineName);
-  await execPromise(getPodmanCli(), ['machine', 'restart', autoMachineName]);
+  // Await since we need to stop the machine before we can start it again
+  await execPromise(getPodmanCli(), ['machine', 'stop', autoMachineName]);
+  await execPromise(getPodmanCli(), ['machine', 'start', autoMachineName]);
+}
+
+// Find and return the current machine
+export async function getCurrentMachine(machineName: string): Promise<MachineJSON> {
+  // Find the machines
+  const machineListOutput = await execPromise(getPodmanCli(), ['machine', 'list', '--format', 'json']);
+  const machines = JSON.parse(machineListOutput) as MachineJSON[];
+
+  // Find the autostarted machine and check its status
+  const currentMachine: MachineJSON = machines.find(machine => machine?.Name === machineName);
+
+  return currentMachine;
 }
 
 // Function that checks to see if the default machine is running and return a boolean

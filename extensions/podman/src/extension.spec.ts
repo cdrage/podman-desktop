@@ -16,12 +16,15 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { afterEach, beforeEach, expect, test, vi } from 'vitest';
-import * as extension from './extension';
+import { Mock, afterEach, beforeEach, expect, test, vi } from 'vitest';
+import * as extension from './extension.mock';
 import * as podmanCli from './podman-cli';
 import { getPodmanCli } from './podman-cli';
 import type { Configuration } from '@podman-desktop/api';
 import * as extensionApi from '@podman-desktop/api';
+import { getCurrentMachine } from './extension';
+
+let testExtension = extension;
 
 const config: Configuration = {
   get: () => {
@@ -83,12 +86,12 @@ vi.mock('@podman-desktop/api', async () => {
 });
 
 beforeEach(() => {
-  vi.clearAllMocks();
-  vi.resetAllMocks();
   console.error = consoleErrorMock;
 });
 
 afterEach(() => {
+  vi.resetAllMocks();
+  vi.restoreAllMocks();
   console.error = originalConsoleError;
 });
 
@@ -180,6 +183,65 @@ test('checkDefaultMachine: do not prompt if the running machine is already the d
   await extension.checkDefaultMachine(fakeJSON);
   expect(extensionApi.window.showInformationMessage).not.toHaveBeenCalled();
 });
+
+// Mock getCurrentMachine function
+test('Test getCurrentMachine', async () => {
+  // Create a fake machine object for testing
+  const fakeMachine: extension.MachineJSON = {
+    Name: 'name',
+    CPUs: 2,
+    Memory: '1048000000',
+    DiskSize: '250000000000',
+    Running: true,
+    Starting: false,
+    Default: true,
+  };
+
+  // Mock execPromise to return fake machine list output
+  const fakeMachineListOutput = JSON.stringify([fakeMachine]);
+  const spyExecPromise = vi.spyOn(podmanCli, 'execPromise');
+  spyExecPromise.mockImplementation(async () => {
+    return fakeMachineListOutput;
+  });
+
+  // Call the getCurrentMachine function
+  const result = await extension.getCurrentMachine('name');
+
+  expect(result).toEqual(fakeMachine);
+});
+
+// Test restartCurrentMachine is called with correct values
+test('Test restartCurrentMachine', async () => {
+  // Create a fake machine object for testing
+  const fakeMachine: extension.MachineJSON = {
+    Name: 'name',
+    CPUs: 2,
+    Memory: '1048000000',
+
+    DiskSize: '250000000000',
+    Running: true,
+    Starting: false,
+    Default: true,
+  };
+
+
+  // Mock getCurrentMachine function
+  const spyGetCurrentMachine = vi.spyOn(extension, 'getCurrentMachine');
+  spyGetCurrentMachine.mockImplementation(async () => {
+    return fakeMachine;
+  });
+
+  /*
+  const spyExecPromise = vi.spyOn(podmanCli, 'execPromise');
+  spyExecPromise.mockImplementation(() => {
+    return Promise.resolve('');
+  });
+  */
+
+  // Call the restartCurrentMachine function
+  await extension.restartMachine('name');
+});
+
 
 test('if a machine is successfully started it changes its state to started', async () => {
   const spyUpdateStatus = vi.spyOn(provider, 'updateStatus');
