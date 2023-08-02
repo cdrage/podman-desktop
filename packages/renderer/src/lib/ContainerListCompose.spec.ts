@@ -34,6 +34,7 @@ const listPodsMock = vi.fn();
 const kubernetesListPodsMock = vi.fn();
 
 const deleteContainersByLabelMock = vi.fn();
+const startContainersByLabelMock = vi.fn();
 
 // fake the window.events object
 beforeAll(() => {
@@ -47,6 +48,7 @@ beforeAll(() => {
   (window as any).kubernetesListPods = kubernetesListPodsMock;
   (window as any).getProviderInfos = getProviderInfosMock;
   (window as any).deleteContainersByLabel = deleteContainersByLabelMock;
+  (window as any).startContainersByLabel = startContainersByLabelMock;
 
   (window.events as unknown) = {
     receive: (_channel: string, func: any) => {
@@ -133,4 +135,65 @@ test('Delete a group of compose containers succesfully', async () => {
   // Expect deleteContainerMock to be called / successfully clicked
   expect(deleteContainersByLabelMock).toBeCalledWith(undefined, 'com.docker.compose.project', groupName);
   expect(deleteContainersByLabelMock).toBeCalledTimes(1);
+});
+
+// Case when we have an error starting a group of stopped compose containers
+test('Error when trying to start a group of containers', async () => {
+  getProviderInfosMock.mockResolvedValue([
+    {
+      name: 'podman',
+      status: 'started',
+      internalId: 'podman-internal-id',
+      containerConnections: [
+        {
+          name: 'podman-machine-default',
+          status: 'started',
+        },
+      ],
+    },
+  ]);
+
+  const groupName = 'compose-group';
+  const mockedContainers = [
+    {
+      Id: 'container1',
+      Image: 'docker.io/kindest/node:foobar',
+      Labels: { 'com.docker.compose.project': groupName },
+      Names: ['container1'],
+      State: 'STOPPED',
+    },
+    {
+      Id: 'container2',
+      Image: 'docker.io/kindest/node:foobar',
+      Labels: { 'com.docker.compose.project': groupName },
+      Names: ['container2'],
+      State: 'STOPPED',
+    },
+  ];
+  listContainersMock.mockResolvedValue(mockedContainers);
+
+  // Send over custom events to simulate PD being started
+  window.dispatchEvent(new CustomEvent('extensions-already-started'));
+  window.dispatchEvent(new CustomEvent('provider-lifecycle-change'));
+  window.dispatchEvent(new CustomEvent('tray:update-provider'));
+
+  // Wait for the store to get populated
+  while (get(containersInfos).length === 0) {
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+
+  while (get(providerInfos).length === 0) {
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+  await waitRender({});
+
+  // Mock startContainersByLabel to throw an error
+  (window as any).startContainersByLabel = vi.fn().mockRejectedValue(new Error('Error starting containers'));
+
+  // Find the 'Start Compose' button for the compose group
+  const startButton = screen.getByRole('button', { name: 'Start Compose' });
+  expect(startButton).toBeInTheDocument();
+
+  // Click on it
+  await fireEvent.click(startButton);
 });
