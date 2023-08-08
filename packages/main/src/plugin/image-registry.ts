@@ -299,8 +299,10 @@ export class ImageRegistry {
     // example of www-authenticate header
     // Www-Authenticate: Bearer realm="https://auth.docker.io/token",service="registry.docker.io",scope="repository:samalba/my-app:pull,push"
     // need to extract realm, service and scope parameters with a regexp
+    // Also accept uppercase OR lowercase BASIC header due to some registries such as
+    // sonatype that use uppercase BASIC header
     const WWW_AUTH_REGEXP =
-      /(?<scheme>Bearer|Basic) realm="(?<realm>[^"]+)"(,service="(?<service>[^"]+)")?(,scope="(?<scope>[^"]+)")?/;
+      /(?<scheme>Bearer|Basic|BASIC) realm="(?<realm>[^"]+)"(,service="(?<service>[^"]+)")?(,scope="(?<scope>[^"]+)")?/;
 
     const parsed = WWW_AUTH_REGEXP.exec(wwwAuthenticate);
     if (parsed?.groups) {
@@ -710,7 +712,7 @@ export class ImageRegistry {
   }
 
   async checkCredentials(serviceUrl: string, username: string, password: string, insecure?: boolean): Promise<void> {
-    if (serviceUrl === undefined || !validator.isURL(serviceUrl)) {
+    if (serviceUrl === undefined) {
       throw Error(
         'The format of the Registry Location is incorrect.\nPlease use the format "registry.location.com" and try again.',
       );
