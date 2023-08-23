@@ -3,6 +3,7 @@
   "displayName": "Compose",
   "description": "Install Compose binary to work with Podman",
   "version": "0.0.1",
+  "icon": "icon.png",
   "publisher": "podman-desktop",
   "license": "Apache-2.0",
   "engines": {
@@ -14,8 +15,63 @@
       {
         "command": "compose.install",
         "title": "Install Compose"
+      },
+      {
+        "command": "compose.onboarding.checkComposeInstalled",
+        "title": "compose: Check Compose installation"
+      },
+      {
+        "command": "compose.onboarding.installCompose",
+        "title": "compose: Install Compose"
       }
-    ]
+    ],
+    "onboarding": {
+      "title": "Compose Setup",
+      "steps": [
+        {
+          "id": "checkComposeInstalled",
+          "label": "Check Compose",
+          "title": "Checking for Compose installation",
+          "command": "compose.onboarding.checkComposeInstalled",
+          "completionEvents": [
+            "onCommand:compose.onboarding.checkComposeInstalled"
+          ]
+        },
+        {
+          "id": "startComposeSetup",
+          "label": "Compose Setup",
+          "title": "Compose Setup",
+          "when": "onboardingContext:composeIsNotInstalled == true",
+          "content": [
+            [
+              {
+                "value": "Podman Desktop provides optional command line support for Compose files with Podman."
+              }
+            ],
+            [
+              {
+                "value": "#### How to use Compose\nRun `podman compose up` in a directory with a Compose file for Podman to deploy the containers.\n\nIf you would like to use `docker compose up` enable **Docker Compatibility** within Podman Desktop.",
+                "highlight": true
+              }
+            ],
+            [
+              {
+                "value": "Compose version ${onboardingContext:composeVersion} will be installed.",
+                "note": true
+              }
+            ],
+            [
+              {
+                "label": "Click here to install a different version",
+                "component": "button",
+                "command": "compose.onboarding.installCompose",
+                "link": true
+              }
+            ]
+          ]
+        }
+      ]
+    }
   },
   "scripts": {
     "build": "vite build && node ./scripts/build.js",

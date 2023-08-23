@@ -25,12 +25,14 @@ export interface OnboardingCommandResponse {
 export interface OnboardingBaseItem {
   id: string;
   highlight?: boolean;
+  note?: boolean;
 }
 
 export interface OnboardingStepButtonItem extends OnboardingBaseItem {
   component: 'button';
   label: string;
   command: string;
+  link?: boolean;
 }
 
 export interface OnboardingStepTextItem extends OnboardingBaseItem {

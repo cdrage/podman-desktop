@@ -932,7 +932,8 @@ export async function activate(extensionContext: extensionApi.ExtensionContext):
     async () => {
       const installation = await getPodmanInstallation();
       const installed = installation ? true : false;
-      extensionApi.context.setValue('podmanIsNotInstalled', !installed, 'onboarding');
+      //extensionApi.context.setValue('podmanIsNotInstalled', !installed, 'onboarding');
+      extensionApi.context.setValue('podmanIsNotInstalled', true, 'onboarding');
     },
   );
 

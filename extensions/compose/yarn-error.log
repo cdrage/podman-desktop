@@ -1,0 +1,125 @@
+Arguments: 
+  /Users/cdrage/.nvm/versions/node/v18.16.1/bin/node /opt/homebrew/bin/yarn --cwd /Users/cdrage/syncthing/dev/electron/podman-desktop/extensions/compose watch
+
+PATH: 
+  /var/folders/cn/pm5mgrcs5h339nphypxtvd080000gn/T/yarn--1692828016509-0.8070951178150916:/Users/cdrage/syncthing/dev/electron/podman-desktop/node_modules/.bin:/Users/cdrage/.config/yarn/link/node_modules/.bin:/Users/cdrage/syncthing/dev/electron/podman-desktop/node_modules/.bin:/Users/cdrage/.yarn/bin:/Users/cdrage/.nvm/versions/node/v18.16.1/libexec/lib/node_modules/npm/bin/node-gyp-bin:/Users/cdrage/.nvm/versions/node/v18.16.1/lib/node_modules/npm/bin/node-gyp-bin:/Users/cdrage/.nvm/versions/node/v18.16.1/bin/node_modules/npm/bin/node-gyp-bin:/Users/cdrage/.nvm/versions/node/v18.16.1/bin:/Users/cdrage/.docker/bin:/opt/podman/bin:/opt/homebrew/opt/go@1.16/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/munki:/opt/podman/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/Users/cdrage/.nvm/versions/node/v18.16.1/bin:/Users/cdrage/.docker/bin:/opt/homebrew/opt/go@1.16/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/Users/cdrage/syncthing/dev/go/bin:/Users/cdrage/syncthing/dev/go/bin
+
+Yarn version: 
+  1.22.18
+
+Node version: 
+  18.16.1
+
+Platform: 
+  darwin arm64
+
+Trace: 
+  SyntaxError: /Users/cdrage/syncthing/dev/electron/podman-desktop/extensions/compose/package.json: Unexpected token [ in JSON at position 2015
+      at JSON.parse (<anonymous>)
+      at /opt/homebrew/lib/node_modules/yarn/lib/cli.js:1625:59
+      at Generator.next (<anonymous>)
+      at step (/opt/homebrew/lib/node_modules/yarn/lib/cli.js:310:30)
+      at /opt/homebrew/lib/node_modules/yarn/lib/cli.js:321:13
+
+npm manifest: 
+  {
+    "name": "compose",
+    "displayName": "Compose",
+    "description": "Install Compose binary to work with Podman",
+    "version": "0.0.1",
+    "icon": "icon.png",
+    "publisher": "podman-desktop",
+    "license": "Apache-2.0",
+    "engines": {
+      "podman-desktop": "^0.0.1"
+    },
+    "main": "./dist/extension.js",
+    "contributes": {
+      "commands": [
+        {
+          "command": "compose.install",
+          "title": "Install Compose"
+        },
+        {
+          "command": "compose.onboarding.checkComposeInstalled",
+          "title": "compose: Check Compose installation"
+        },
+        {
+          "command": "compose.onboarding.installCompose",
+          "title": "compose: Install Compose"
+        }
+      ],
+      "onboarding": {
+        "title": "Compose Setup",
+        "steps": [
+          {
+            "id": "checkComposeInstalled",
+            "label": "Check Compose",
+            "title": "Checking for Compose installation",
+            "command": "compose.onboarding.checkComposeInstalled",
+            "completionEvents": [
+              "onCommand:compose.onboarding.checkComposeInstalled"
+            ]
+          },
+          {
+            "id": "startComposeSetup",
+            "label": "Compose Setup",
+            "title": "Compose Setup",
+            "when": "onboardingContext:composeIsNotInstalled == true",
+            "content": [
+              [
+                {
+                  "value": "Podman Desktop provides optional command line support for Compose files with Podman."
+                }
+              ],
+              [
+                {
+                  "value": "#### How to use Compose\nRun `podman compose up` in a directory with a Compose file for Podman to deploy the containers.\n\nIf you would like to use `docker compose up` enable **Docker Compatibility** within Podman Desktop.",
+                  "highlight": true
+                }
+              ],
+              [
+                {
+                  "value": "Compose version ${onboardingContext:composeVersion} will be installed.",
+                  "note": true
+                }
+              ]
+              [
+                {
+                  "value": "Click here install a different version",
+                  "component": "button",
+                  "command": "compose.onboarding.installCompose",
+                  "subtle": true
+                }
+            ]
+          }
+        ]
+      }
+    },
+    "scripts": {
+      "build": "vite build && node ./scripts/build.js",
+      "test": "vitest run --coverage",
+      "test:watch": "vitest watch --coverage",
+      "watch": "vite build --watch"
+    },
+    "dependencies": {
+      "@octokit/rest": "^20.0.1",
+      "mustache": "^4.2.0",
+      "shell-path": "^3.0.0",
+      "sudo-prompt": "^9.2.1"
+    },
+    "devDependencies": {
+      "7zip-min": "^1.4.3",
+      "@podman-desktop/api": "^0.0.1",
+      "mkdirp": "^3.0.1",
+      "vite": "^4.4.9",
+      "vitest": "^0.34.2",
+      "zip-local": "^0.3.5"
+    }
+  }
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile

@@ -8,6 +8,7 @@ export let extension: string;
 export let item: OnboardingStepItem;
 export let getContext: () => ContextUI;
 export let executeCommand: (command: string) => Promise<void>;
+import AuditMessageBox from '../ui/AuditMessageBox.svelte';
 
 const onboardingContextRegex = new RegExp(/\${onboardingContext:(.+?)}/g);
 const globalContextRegex = new RegExp(/\${onContext:(.+?)}/g);
@@ -40,7 +41,15 @@ function createItem(item: OnboardingStepItem): string {
   switch (item.component) {
     case 'button': {
       const buttonId = `button-${buttons.size}`;
-      const value = `<button id="${buttonId}" class="bg-purple-700 py-2 px-2.5 rounded-md">${item.label}</button>`;
+
+      // Temporary solution until we refactor proper button output
+      // if it is a "link" then we will have a more subtle button
+      let buttonClass = 'bg-purple-700 py-2 px-2.5 rounded-md';
+      if (item.link) {
+        buttonClass = 'text-sm border-none text-purple-400 hover:bg-white hover:bg-opacity-10';
+      }
+
+      const value = `<button id="${buttonId}" class="${buttonClass}">${item.label}</button>`;
       buttons.set(buttonId, item.command);
       buttons = buttons;
       html = value;
@@ -81,7 +90,13 @@ function getNewValue(label: string, matchArray: RegExpMatchArray, prefix?: strin
 }
 </script>
 
-<div class="flex justify-center {item.highlight ? 'bg-charcoal-600' : ''} p-3 m-2 rounded-md min-w-[500px]">
+<div class="flex justify-center {item.highlight ? 'bg-charcoal-700 p-4 m-3' : 'p-2 m-1'} rounded-md min-w-[500px]">
+
+
+  <!-- If NOTE is passed in, we will use the same style as from AuditMessageBox.svelte -->
+  {#if item.note }
+    <AuditMessageBox auditResult={{ records: [{ type: 'info', record: html }] }} />
+  {:else}
   {#if html}
     {#if !isMarkdown}
       <!-- eslint-disable-next-line svelte/no-at-html-tags -->
@@ -89,5 +104,6 @@ function getNewValue(label: string, matchArray: RegExpMatchArray, prefix?: strin
     {:else}
       <Markdown>{html}</Markdown>
     {/if}
+  {/if}
   {/if}
 </div>

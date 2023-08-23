@@ -3,6 +3,14 @@
   line-height: revert;
   padding-bottom: 8px;
   margin-bottom: 8px;
+  font-size: 14px;
+}
+
+/* code blocks within p, e.g. `code`
+Fixes the rendering issues when rendering markdown within svelte */
+.markdown > :global(p) > :global(code) {
+  font-size: 12px;
+  background-color: rgb(54 55 58 / var(--tw-bg-opacity));
 }
 
 .markdown > :global(h1),
@@ -13,7 +21,6 @@
   font-size: revert;
   line-height: normal;
   font-weight: revert;
-  border-bottom: 1px solid #444;
   margin-bottom: 20px;
 }
 
