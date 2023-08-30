@@ -27,6 +27,12 @@ export interface ExtensionUpdateInfo {
   ociUri: string;
 }
 
+// contains the definition of the extension cli
+export interface ExtensionCliInfo {
+  version: string;
+  updateVersion?: string;
+}
+
 export interface ExtensionInfo {
   id: string;
   name: string;
@@ -42,4 +48,5 @@ export interface ExtensionInfo {
     version: string;
     ociUri: string;
   };
+  cli?: ExtensionCliInfo;
 }
