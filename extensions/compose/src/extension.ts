@@ -17,7 +17,7 @@
  ***********************************************************************/
 
 import { Octokit } from '@octokit/rest';
-import type * as extensionApi from '@podman-desktop/api';
+import * as extensionApi from '@podman-desktop/api';
 import { CliRun } from './cli-run';
 import { Detect } from './detect';
 import { ComposeExtension } from './compose-extension';
@@ -34,6 +34,39 @@ export async function activate(extensionContext: extensionApi.ExtensionContext):
       console.error('Error activating extension', error);
     });
   }, 0);
+
+    // ONBOARDING: Command to check compose installation
+    const onboardingCheckInstallationCommand = extensionApi.commands.registerCommand(
+      'compose.onboarding.checkComposeInstalled',
+      async () => {
+        // TODO: Update to actually get the compose version, use a fake one for now. 
+        // This need to be done within the "check compose installed" section as it's the "first
+        // step" of the onboarding.
+        const composeVersion = '1.0.0';
+        extensionApi.context.setValue('composeVersion', composeVersion, 'onboarding');
+        extensionApi.context.setValue('composeIsNotInstalled', true, 'onboarding');
+      },
+    );
+  
+    extensionContext.subscriptions.push(onboardingCheckInstallationCommand);
+
+
+    // Need to "ADD" a provider so we can actually press the button! 
+
+  const providerOptions: extensionApi.ProviderOptions = {
+    name: 'Compose',
+    id: 'Compose',
+    status: 'unknown',
+    images: {
+      icon: './icon.png'
+    },
+  };
+
+  providerOptions.emptyConnectionMarkdownDescription = `Compose is a specification for defining and running multi-container applications. We support both \`podman compose\` and \`docker compose\` commands.\n\nMore information:\n* [\`podman compose\`](https://docs.podman.io/en/latest/markdown/podman-compose.1.html)\n* [\`docker compose\`](https://github.com/docker/compose)\n* [Compose specification](https://compose-spec.io/)`;
+
+  const provider = extensionApi.provider.createProvider(providerOptions);
+  extensionContext.subscriptions.push(provider);
+
 }
 
 async function postActivate(extensionContext: extensionApi.ExtensionContext): Promise<void> {
