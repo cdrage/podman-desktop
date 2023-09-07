@@ -15,7 +15,18 @@
         "command": "compose.install",
         "title": "Install Compose"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Compose",
+      "properties": {
+        "compose.binary.systemwide": {
+          "title": "Install Compose system-wide",
+          "type": "boolean",
+          "default": false,
+          "description": "Custom path to Podman binary (Default is blank)"
+        }
+      }
+    }
   },
   "scripts": {
     "build": "vite build && node ./scripts/build.js",
