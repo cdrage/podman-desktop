@@ -2,9 +2,19 @@
 UI guidelines -->
 <style>
 .markdown > :global(p) {
-  line-height: revert;
+  line-height: normal;
   padding-bottom: 8px;
   margin-bottom: 8px;
+}
+
+.markdown > :global(b),
+:global(strong) {
+  font-weight: 600;
+}
+
+.markdown > :global(blockquote) {
+  opacity: 0.8;
+  line-height: normal;
 }
 
 .markdown > :global(h1),

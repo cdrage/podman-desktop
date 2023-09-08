@@ -3,6 +3,7 @@
   "displayName": "Compose",
   "description": "Install Compose binary to work with Podman",
   "version": "0.0.1",
+  "icon": "icon.png",
   "publisher": "podman-desktop",
   "license": "Apache-2.0",
   "engines": {
@@ -14,8 +15,76 @@
       {
         "command": "compose.install",
         "title": "Install Compose"
+      },
+      {
+        "command": "compose.onboarding.checkComposeInstalled",
+        "title": "compose: Check Compose installation"
+      },
+      {
+        "command": "compose.onboarding.installCompose",
+        "title": "compose: Install Compose"
       }
-    ]
+    ],
+    "onboarding": {
+      "title": "Compose Setup",
+      "steps": [
+        {
+          "id": "checkComposeInstalled",
+          "label": "Check Compose",
+          "title": "Checking for Compose installation",
+          "command": "compose.onboarding.checkComposeInstalled",
+          "completionEvents": [
+            "onCommand:compose.onboarding.checkComposeInstalled"
+          ]
+        },
+        {
+          "id": "startComposeInstallation",
+          "label": "Compose Installation",
+          "title": "Compose Installation",
+          "when": "onboardingContext:composeIsNotInstalled == true",
+          "content": [
+            [
+              {
+                "value": "Compose support in Podman Desktop enables you to use Compose tools with supported container engines (podman and docker) **on the command line**."
+              }
+            ],
+            [
+              {
+                "value": "#### How to use Compose\nRun `podman compose up` in a directory with a `compose.yaml` for Podman to deploy the containers. Podman Desktop will automatically detect the multi-container compose application. \n\n> ℹ️ If you would like to use `docker compose up` enable **Docker Compatibility** within Podman Desktop.",
+                "highlight": true
+              }
+            ],
+            [
+              {
+                "value": "Podman Desktop will install the latest Compose binary (${onboardingContext:composeInstallVersion}). :link[Need a different version?]{command=compose.onboarding.promptUserForVersion}"
+              }
+            ]
+          ]
+        },
+        {
+          "id": "installComposeView",
+          "title": "Installing Compose ${onboardingContext:composeInstallVersion}",
+          "description": "Downloading and installing the binary.\n\nOnce installed, we will enable and configure the extension.",
+          "when": "onboardingContext:composeIsNotInstalled == true",
+          "command": "compose.onboarding.installCompose",
+          "completionEvents": [
+            "onCommand:compose.onboarding.installCompose"
+          ]
+        },
+        {
+          "id": "composeFailedInstallation",
+          "title": "Failed installing Compose",
+          "when": "onboardingContext:composeIsNotInstalled == true",
+          "state": "failed"
+        },
+        {
+          "id": "composeInstalled",
+          "title": "Compose successfully installed",
+          "when": "onboardingContext:composeIsNotInstalled == false",
+          "state": "succeeded"
+        }
+      ]
+    }
   },
   "scripts": {
     "build": "vite build && node ./scripts/build.js",
