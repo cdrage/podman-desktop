@@ -13,22 +13,101 @@
   "contributes": {
     "commands": [
       {
-        "command": "compose.install",
-        "title": "Compose: Install..."
-      },
-      {
         "command": "compose.checks",
         "title": "Compose: Checks..."
+      },
+      {
+        "command": "compose.install",
+        "title": "Compose: Install Compose"
+      },
+      {
+        "command": "compose.onboarding.checkComposeInstalled",
+        "title": "Compose: Check Compose installation"
+      },
+      {
+        "command": "compose.onboarding.installCompose",
+        "title": "Compose: Install Compose"
       }
     ],
+    "configuration": {
+      "title": "Compose",
+      "properties": {
+        "compose.binary.installComposeSystemWide": {
+          "type": "boolean",
+          "default": false,
+          "scope": [
+            "DEFAULT",
+            "Onboarding"
+          ],
+          "hidden": true,
+          "description": "Install system-wide instead of just your user directory, so compose can be accessed on the command line. Note: You will be prompted for system privileges when enabling this. "
+        }
+      }
+    },
     "onboarding": {
       "title": "Compose Setup",
-      "enablement": "!compose.isComposeInstalledSystemWide",
       "steps": [
         {
-          "id": "composeSettings",
-          "label": "Compose Settings",
-          "title": "Compose Settings",
+          "id": "checkComposeInstalled",
+          "label": "Check Compose",
+          "title": "Checking for Compose installation",
+          "command": "compose.onboarding.checkComposeInstalled",
+          "completionEvents": [
+            "onCommand:compose.onboarding.checkComposeInstalled"
+          ]
+        },
+        {
+          "id": "startComposeInstallation",
+          "label": "Compose Installation",
+          "title": "Compose Installation",
+          "when": "onboardingContext:composeIsNotInstalled == true",
+          "content": [
+            [
+              {
+                "value": "Compose support in Podman Desktop enables you to use Compose tools with supported container engines (podman and docker) **on the command line**."
+              }
+            ],
+            [
+              {
+                "value": "#### How to use Compose\nRun `podman compose up` in a directory with a `compose.yaml` for Podman to deploy the containers. Podman Desktop will automatically detect the multi-container compose application. \n\n> ℹ️ If you would like to use `docker compose up` enable **Docker Compatibility** within Podman Desktop.",
+                "highlight": true
+              }
+            ],
+            [
+              {
+                "value": "Podman Desktop will install the latest Compose binary (${onboardingContext:composeInstallVersion}). :link[Want to install a different version?]{command=compose.onboarding.promptUserForVersion}",
+                "when": "!onboardingContext:composeInstallCustomVersion"
+              }
+            ],
+            [
+              {
+                "value": "Podman Desktop will install the selected Compose binary (${onboardingContext:composeInstallVersion}). :link[Want to install a different version?]{command=compose.onboarding.promptUserForVersion}",
+                "when": "onboardingContext:composeInstallCustomVersion"
+              }
+            ]
+          ]
+        },
+        {
+          "id": "installComposeView",
+          "title": "Installing Compose ${onboardingContext:composeInstallVersion}",
+          "description": "Downloading and installing the binary.\n\nOnce installed, we will enable and configure the extension.",
+          "when": "onboardingContext:composeIsNotInstalled == true",
+          "command": "compose.onboarding.installCompose",
+          "completionEvents": [
+            "onCommand:compose.onboarding.installCompose"
+          ]
+        },
+        {
+          "id": "composeFailedInstallation",
+          "title": "Failed installing Compose",
+          "when": "onboardingContext:composeIsNotInstalled == true",
+          "state": "failed"
+        },
+        {
+          "id": "composeInstalled",
+          "title": "Compose successfully installed",
+          "when": "onboardingContext:composeIsNotInstalled == false",
+          "state": "succeeded",
           "content": [
             [
               {
@@ -38,19 +117,8 @@
             ]
           ]
         }
-      ]
-    },
-    "configuration": {
-      "title": "Compose",
-      "properties": {
-        "compose.binary.installComposeSystemWide": {
-          "type": "boolean",
-          "default": false,
-          "scope": ["DEFAULT", "Onboarding"],
-          "hidden": true,
-          "description": "Install system-wide instead of just your user directory, so compose can be accessed on the command line. Note: You will be prompted for system privileges when enabling this. "
-        }
-      }
+      ],
+      "enablement": "true"
     }
   },
   "scripts": {
@@ -62,7 +130,8 @@
   "dependencies": {
     "@octokit/rest": "^20.0.2",
     "mustache": "^4.2.0",
-    "shell-path": "^3.0.0"
+    "shell-path": "^3.0.0",
+    "sudo-prompt": "^9.2.1"
   },
   "devDependencies": {
     "7zip-min": "^1.4.3",
