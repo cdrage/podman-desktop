@@ -1212,6 +1212,16 @@ function initExposure(): void {
     return ipcInvoke('system:get-free-port-range', rangeSize);
   });
 
+  // We do not want to expose being able to read / write any file, so we will expose
+  // reading and writing YAML only
+  contextBridge.exposeInMainWorld('readYamlFile', async (filePath: string): Promise<string> => {
+    return ipcInvoke('system:read-yaml-file', filePath);
+  });
+
+  contextBridge.exposeInMainWorld('writeYamlFile', async (filePath: string, data: string): Promise<void> => {
+    return ipcInvoke('system:write-yaml-file', filePath, data);
+  });
+
   type LogFunction = (...data: unknown[]) => void;
 
   let onDataCallbacksStartReceiveLogsId = 0;

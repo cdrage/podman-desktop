@@ -6,6 +6,7 @@ import { EditorSettings } from '../../../../main/src/plugin/editor-settings';
 
 import type monaco from 'monaco-editor';
 import { getPanelDetailColor } from '../color/color';
+import { PlaceholderContentWidget } from './placeholder-widget';
 
 let divEl: HTMLDivElement;
 let editor: monaco.editor.IStandaloneCodeEditor;
@@ -13,6 +14,11 @@ let Monaco;
 
 export let content = '';
 export let language = 'json';
+export let readOnly = true;
+
+// Add "default" text that will show if the content is blank
+// once typing occurs it'll clear.
+export let defaultText = '';
 
 onMount(async () => {
   self.MonacoEnvironment = {
@@ -45,11 +51,17 @@ onMount(async () => {
     value: content,
     fontSize,
     language,
-    readOnly: true,
+    readOnly: readOnly,
     theme: 'podmanDesktopTheme',
     automaticLayout: true,
     scrollBeyondLastLine: false,
   });
+
+  // If the content passed in is blank and there is default text, create the "placeholder widget"
+  // using a custom class that will show the default text and remove it when the user starts typing
+  if (content === '' && defaultText !== '') {
+    new PlaceholderContentWidget(defaultText, editor);
+  }
 });
 
 onDestroy(() => {

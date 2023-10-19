@@ -128,6 +128,7 @@ import type {
 } from '/@/plugin/kube-generator-registry.js';
 import type { KubernetesGeneratorInfo } from '/@/plugin/api/KubernetesGeneratorInfo.js';
 import type { CommandInfo } from './api/command-info.js';
+import { readYamlFile, writeYamlFile } from './util/yaml.js';
 import { CliToolRegistry } from './cli-tool-registry.js';
 import type { CliToolInfo } from './api/cli-tool-info.js';
 import type { NotificationCard, NotificationCardOptions } from './api/notification.js';
@@ -1308,6 +1309,15 @@ export class PluginSystem {
 
     this.ipcHandle('system:get-free-port-range', async (_, rangeSize: number): Promise<string> => {
       return getFreePortRange(rangeSize);
+    });
+
+    // Read and write local YAML files
+    this.ipcHandle('system:read-yaml-file', async (_, filePath: string): Promise<string> => {
+      return readYamlFile(filePath);
+    });
+
+    this.ipcHandle('system:write-yaml-file', async (_, filePath: string, data: string): Promise<void> => {
+      return writeYamlFile(filePath, data);
     });
 
     this.ipcHandle(

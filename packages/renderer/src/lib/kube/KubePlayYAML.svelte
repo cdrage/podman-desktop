@@ -20,6 +20,7 @@ let runStarted = false;
 let runFinished = false;
 let runError = '';
 let runWarning = '';
+let yamlError = '';
 let kubernetesYamlFilePath: string | undefined = undefined;
 let hasInvalidFields = true;
 
@@ -30,6 +31,7 @@ let allNamespaces: V1NamespaceList;
 let playKubeResultRaw: string;
 let playKubeResultJSON: any;
 
+let kubeYamlContent: string = '';
 let userChoice: 'podman' | 'kubernetes' = 'podman';
 
 let providers: ProviderInfo[] = [];
@@ -52,6 +54,9 @@ function removeEmptyOrNull(obj: any) {
   return obj;
 }
 
+// TODO: Modify this to use the MonacoEditor information...
+// we'll have to "export" the content from the MonacoEditor to a tmp file
+// validate it and then use it to play the kube file
 async function playKubeFile(): Promise<void> {
   runStarted = true;
   runFinished = false;
@@ -148,9 +153,32 @@ async function getKubernetesfileLocation() {
     name: 'YAML files',
     extensions: ['yaml', 'yml'],
   });
+
+  // Set the global yaml file path
   if (!result.canceled && result.filePaths.length === 1) {
     kubernetesYamlFilePath = result.filePaths[0];
     hasInvalidFields = false;
+  }
+
+  // When the user has selected a yaml file, we will propagage the content to kubeYamlContent
+  // so we may edit it / view it / etc.
+  await loadYamlFileContent();
+}
+
+// Function that will load the content of the file to kubeYamlContent using js-yaml
+// This will be used to validate the yaml file
+async function loadYamlFileContent() {
+  if (kubernetesYamlFilePath) {
+    try {
+      const yamlLoad = await window.readYamlFile(kubernetesYamlFilePath);
+      kubeYamlContent = yamlLoad;
+
+      // Clear the error if it was set
+      yamlError = '';
+    } catch (error) {
+      console.error('error loading yaml file: ', error);
+      yamlError = String(error);
+    }
   }
 }
 </script>
@@ -164,120 +192,128 @@ async function getKubernetesfileLocation() {
     <KubePlayIcon slot="icon" size="30px" />
 
     <div slot="content" class="p-5 min-w-full h-fit">
-      <div class="bg-charcoal-800 px-6 py-4 space-y-6 lg:px-8 sm:pb-6 xl:pb-8 rounded-lg">
-        <div class="text-xl font-medium">Select file:</div>
+      <div class="bg-charcoal-800 pt-5 space-y-6 px-8 sm:pb-6 xl:pb-8 rounded-lg">
         <div hidden="{runStarted}">
-          <label for="containerFilePath" class="block mb-2 text-sm font-bold text-gray-400">Kubernetes YAML file</label>
+          <label for="containerFilePath" class="block mb-2 text-sm font-bold text-gray-400">Import YAML File</label>
           <input
             on:click="{() => getKubernetesfileLocation()}"
             name="containerFilePath"
             id="containerFilePath"
             bind:value="{kubernetesYamlFilePath}"
             readonly
-            placeholder="Select a .yaml file to play"
+            placeholder="Select a .yaml file"
             class="w-full p-2 outline-none text-sm bg-charcoal-600 rounded-sm text-gray-700 placeholder-gray-700"
             required />
+        </div>
+
+        {#if yamlError}
+          <ErrorMessage class="text-sm" error="{yamlError}" />
+        {/if}
+
+        <div>
+          <label for="yamlEditor" class="block mb-2 text-sm font-bold text-gray-400">Edit YAML</label>
+          <div class="h-[200px] pt-2" id="yamlEditor">
+            <MonacoEditor
+              content="{kubeYamlContent}"
+              language="yaml"
+              readOnly="{false}"
+              defaultText="Import a file or copy-and-paste your YAML here to start editing" />
+          </div>
         </div>
 
         <div>
           <div class="text-sm font-bold text-gray-400 pb-2">Select Runtime:</div>
 
-          <div class="px-5">
-            <div class="flex flex-col space-y-3">
-              <button
-                hidden="{providerConnections.length === 0}"
-                class:border-2="{defaultContextName}"
-                class="rounded-md p-5 cursor-pointer {userChoice === 'podman'
-                  ? 'border-dustypurple-700'
-                  : 'border-charcoal-600'}"
-                on:click="{() => {
-                  userChoice = 'podman';
-                }}">
-                <div class="flex flex-row align-middle items-center">
-                  <div class=" text-2xl {userChoice === 'podman' ? 'text-dustypurple-500' : 'text-charcoal-600'}">
-                    <Fa icon="{faCircleCheck}" />
-                  </div>
-                  <div class="pl-2 text-gray-900">Using a Podman container engine</div>
+          <div class="flex flex-col space-y-3">
+            <button
+              hidden="{providerConnections.length === 0}"
+              class:border-2="{defaultContextName}"
+              class="rounded-md p-5 cursor-pointer {userChoice === 'podman'
+                ? 'border-dustypurple-700'
+                : 'border-charcoal-600'}"
+              on:click="{() => {
+                userChoice = 'podman';
+              }}">
+              <div class="flex flex-row align-middle items-center">
+                <div class=" text-2xl {userChoice === 'podman' ? 'text-dustypurple-500' : 'text-charcoal-600'}">
+                  <Fa icon="{faCircleCheck}" />
                 </div>
-                <div hidden="{runStarted}">
-                  {#if providerConnections.length > 1}
-                    <label
-                      for="providerConnectionName"
-                      class="py-6 block mb-2 text-sm font-medium text-gray-400 dark:text-gray-400"
-                      >Container Engine
-                      <select
-                        class="border text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block w-full p-2.5 bg-gray-900 border-gray-900 placeholder-gray-700 text-white"
-                        name="providerChoice"
-                        bind:value="{selectedProvider}">
-                        {#each providerConnections as providerConnection}
-                          <option value="{providerConnection}">{providerConnection.name}</option>
-                        {/each}
-                      </select>
-                    </label>
-                  {/if}
-                  {#if providerConnections.length === 1 && selectedProviderConnection}
-                    <input
-                      type="hidden"
-                      name="providerChoice"
-                      readonly
-                      bind:value="{selectedProviderConnection.name}" />
-                  {/if}
-                </div>
-              </button>
-              <button
-                hidden="{!defaultContextName}"
-                class="border-2 rounded-md p-5 cursor-pointer {userChoice === 'kubernetes'
-                  ? 'border-dustypurple-700'
-                  : 'border-charcoal-600'}"
-                on:click="{() => {
-                  userChoice = 'kubernetes';
-                }}">
-                <div class="flex flex-row align-middle items-center">
-                  <div class=" text-2xl {userChoice === 'kubernetes' ? 'text-dustypurple-500' : 'text-charcoal-600'}">
-                    <Fa icon="{faCircleCheck}" />
-                  </div>
-                  <div class="pl-2 text-gray-900">Using a Kubernetes cluster</div>
-                </div>
-
-                {#if defaultContextName}
-                  <div class="pt-2">
-                    <label
-                      for="contextToUse"
-                      class="block mb-1 text-sm font-bold text-gray-400"
-                      class:text-gray-900="{userChoice !== 'kubernetes'}">Kubernetes Context:</label>
-                    <input
-                      type="text"
-                      disabled="{userChoice === 'podman'}"
-                      bind:value="{defaultContextName}"
-                      name="defaultContextName"
-                      id="defaultContextName"
-                      readonly
-                      class="cursor-default w-full p-2 outline-none text-sm bg-charcoal-600 rounded-sm text-gray-700 placeholder-gray-700"
-                      required />
-                  </div>
-                {/if}
-
-                {#if allNamespaces}
-                  <div class="pt-2">
-                    <label
-                      for="namespaceToUse"
-                      class="block mb-1 text-sm font-medium text-gray-400"
-                      class:text-gray-900="{userChoice !== 'kubernetes'}">Kubernetes namespace:</label>
+                <div class="pl-2 text-gray-900">Using a Podman container engine</div>
+              </div>
+              <div hidden="{runStarted}">
+                {#if providerConnections.length > 1}
+                  <label
+                    for="providerConnectionName"
+                    class="py-6 block mb-2 text-sm font-medium text-gray-400 dark:text-gray-400"
+                    >Container Engine
                     <select
-                      disabled="{userChoice === 'podman'}"
-                      class="w-full p-2 outline-none text-sm bg-charcoal-900 rounded-sm text-gray-700 placeholder-gray-700"
-                      name="namespaceChoice"
-                      bind:value="{currentNamespace}">
-                      {#each allNamespaces.items as namespace}
-                        <option value="{namespace.metadata?.name}">
-                          {namespace.metadata?.name}
-                        </option>
+                      class="border text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block w-full p-2.5 bg-gray-900 border-gray-900 placeholder-gray-700 text-white"
+                      name="providerChoice"
+                      bind:value="{selectedProvider}">
+                      {#each providerConnections as providerConnection}
+                        <option value="{providerConnection}">{providerConnection.name}</option>
                       {/each}
                     </select>
-                  </div>
+                  </label>
                 {/if}
-              </button>
-            </div>
+                {#if providerConnections.length === 1 && selectedProviderConnection}
+                  <input type="hidden" name="providerChoice" readonly bind:value="{selectedProviderConnection.name}" />
+                {/if}
+              </div>
+            </button>
+            <button
+              hidden="{!defaultContextName}"
+              class="border-2 rounded-md p-5 cursor-pointer {userChoice === 'kubernetes'
+                ? 'border-dustypurple-700'
+                : 'border-charcoal-600'}"
+              on:click="{() => {
+                userChoice = 'kubernetes';
+              }}">
+              <div class="flex flex-row align-middle items-center">
+                <div class=" text-2xl {userChoice === 'kubernetes' ? 'text-dustypurple-500' : 'text-charcoal-600'}">
+                  <Fa icon="{faCircleCheck}" />
+                </div>
+                <div class="pl-2 text-gray-900">Using a Kubernetes cluster</div>
+              </div>
+
+              {#if defaultContextName}
+                <div class="pt-2">
+                  <label
+                    for="contextToUse"
+                    class="block mb-1 text-sm font-bold text-gray-400"
+                    class:text-gray-900="{userChoice !== 'kubernetes'}">Kubernetes Context:</label>
+                  <input
+                    type="text"
+                    disabled="{userChoice === 'podman'}"
+                    bind:value="{defaultContextName}"
+                    name="defaultContextName"
+                    id="defaultContextName"
+                    readonly
+                    class="cursor-default w-full p-2 outline-none text-sm bg-charcoal-600 rounded-sm text-gray-700 placeholder-gray-700"
+                    required />
+                </div>
+              {/if}
+
+              {#if allNamespaces}
+                <div class="pt-2">
+                  <label
+                    for="namespaceToUse"
+                    class="block mb-1 text-sm font-medium text-gray-400"
+                    class:text-gray-900="{userChoice !== 'kubernetes'}">Kubernetes namespace:</label>
+                  <select
+                    disabled="{userChoice === 'podman'}"
+                    class="w-full p-2 outline-none text-sm bg-charcoal-900 rounded-sm text-gray-700 placeholder-gray-700"
+                    name="namespaceChoice"
+                    bind:value="{currentNamespace}">
+                    {#each allNamespaces.items as namespace}
+                      <option value="{namespace.metadata?.name}">
+                        {namespace.metadata?.name}
+                      </option>
+                    {/each}
+                  </select>
+                </div>
+              {/if}
+            </button>
           </div>
         </div>
 
@@ -320,7 +356,10 @@ async function getKubernetesfileLocation() {
             </div>
 
             <div class="h-[100px] pt-2">
-              <MonacoEditor content="{playKubeResultRaw}" language="json" />
+              <!-- TO FIX IN THE FUTURE: Must fix this / way to output errors correctly / better 
+              as there is a weird bug when two MonacoEditor's are loaded, there is a nested import loop
+              see this thread: https://github.com/vitejs/vite/discussions/1791#discussioncomment-321046 -->
+              <!--<MonacoEditor content="{playKubeResultRaw}" language="json" />-->
             </div>
           </div>
         {/if}
