@@ -24,6 +24,13 @@ import { ComposeGitHubReleases } from './compose-github-releases';
 import { OS } from './os';
 import * as handler from './handler';
 import { ComposeDownload } from './download';
+import * as path from 'path';
+import { getCliVersion } from './utils';
+
+const composeCliName = 'docker-compose';
+const composeDisplayName = 'Compose';
+const composeDescription = `Compose is a specification for defining and running multi-container applications. We support both [podman compose](https://docs.podman.io/en/latest/markdown/podman-compose.1.html) and [docker compose](https://github.com/docker/compose) commands.\n\nMore information: [compose-spec.io](https://compose-spec.io/)`;
+const imageLocation = './icon.png';
 
 let composeVersionMetadata: ComposeGithubReleaseArtifactMetadata | undefined;
 
@@ -138,16 +145,45 @@ export async function activate(extensionContext: extensionApi.ExtensionContext):
   // Need to "ADD" a provider so we can actually press the button!
   // We set this to "unknown" so it does not appear on the dashboard (we only want it in preferences).
   const providerOptions: extensionApi.ProviderOptions = {
-    name: 'Compose',
-    id: 'Compose',
+    name: composeDisplayName,
+    id: composeDisplayName,
     status: 'unknown',
     images: {
-      icon: './icon.png',
+      icon: imageLocation,
     },
   };
 
-  providerOptions.emptyConnectionMarkdownDescription = `Compose is a specification for defining and running multi-container applications. We support both [podman compose](https://docs.podman.io/en/latest/markdown/podman-compose.1.html) and [docker compose](https://github.com/docker/compose) commands.\n\nMore information: [compose-spec.io](https://compose-spec.io/)`;
+  providerOptions.emptyConnectionMarkdownDescription = composeDescription;
 
   const provider = extensionApi.provider.createProvider(providerOptions);
   extensionContext.subscriptions.push(provider);
+
+  // The location of the binary (local storage folder)
+  const binaryPath = path.join(
+    extensionContext.storagePath,
+    'bin',
+    os.isWindows() ? composeCliName + '.exe' : composeCliName,
+  );
+  let binaryVersion = '';
+
+  // Use getCliVersion to try and get the version of the binary.
+  // If this fails, return output to console the error.
+  try {
+    binaryVersion = await getCliVersion(binaryPath, '--version');
+  } catch (e) {
+    console.error(`Error getting compose version: ${e}`);
+  }
+
+  // Register the CLI tool so it appears in the preferences page. We will detect which version is being ran by
+  // checking the local storage folder for the binary. If it exists, we will run `--version` and parse the information.
+  extensionApi.cli.createCliTool({
+    name: composeCliName,
+    displayName: composeDisplayName,
+    markdownDescription: composeDescription,
+    images: {
+      icon: imageLocation,
+    },
+    version: binaryVersion,
+    path: binaryPath,
+  });
 }
