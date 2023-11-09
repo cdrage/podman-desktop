@@ -2,23 +2,8 @@
 import SettingsPage from './SettingsPage.svelte';
 import EngineIcon from '../ui/EngineIcon.svelte';
 import EmptyScreen from '../ui/EmptyScreen.svelte';
-import { onMount } from 'svelte';
-import type { KubeContextUI } from '../kube/KubeContextUI';
-import { getKubeUIContexts } from '../kube/KubeContextUI';
 import Link from '../ui/Link.svelte';
-
-let contexts: KubeContextUI[] = [];
-
-$: contexts;
-
-onMount(async () => {
-  // Retrieve both the contexts and clusters
-  let k8sContexts = await window.kubernetesGetContexts();
-  let k8sClusters = await window.kubernetesGetClusters();
-
-  // Convert them to KubeContextUI so we can safely render them.
-  contexts = getKubeUIContexts(k8sContexts, k8sClusters);
-});
+import { kubernetesContexts } from '../../stores/kubernetes-contexts';
 </script>
 
 <SettingsPage title="Kubernetes Contexts">
@@ -29,8 +14,8 @@ onMount(async () => {
       icon="{EngineIcon}"
       title="No Kubernetes contexts found"
       message="Check that $HOME/.kube/config exists or KUBECONFIG environment variable has been set correctly."
-      hidden="{contexts.length > 0}" />
-    {#each contexts as context}
+      hidden="{$kubernetesContexts.length > 0}" />
+    {#each $kubernetesContexts as context}
       <div role="row" class="bg-charcoal-600 mb-5 rounded-md p-3 flex-nowrap">
         <div class="pb-2">
           <div class="flex">
