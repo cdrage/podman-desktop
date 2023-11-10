@@ -833,6 +833,7 @@ export class ExtensionLoader {
       async setKubeconfig(kubeconfig: containerDesktopAPI.Uri): Promise<void> {
         return kubernetesClient.setKubeconfig(kubeconfig);
       },
+      // TODO: Add functionality here to set kube context?
       onDidUpdateKubeconfig: (listener, thisArg, disposables) => {
         return kubernetesClient.onDidUpdateKubeconfig(listener, thisArg, disposables);
       },

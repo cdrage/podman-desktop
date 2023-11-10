@@ -56,6 +56,9 @@ export async function grabKubernetesContexts(): Promise<KubeContextUI[]> {
   const k8sContexts = await window.kubernetesGetContexts();
   const k8sClusters = await window.kubernetesGetClusters();
 
+  // Get the current context selected
+  // const currentContext = await window.kubernetesGetCurrentContext();
+
   // Convert them to KubeContextUI so we can safely render them.
   return getKubeUIContexts(k8sContexts, k8sClusters);
 }
