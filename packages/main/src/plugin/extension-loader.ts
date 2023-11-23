@@ -70,6 +70,8 @@ import type { KubeGeneratorRegistry, KubernetesGeneratorProvider } from '/@/plug
 import type { CliToolRegistry } from './cli-tool-registry.js';
 import type { NotificationRegistry } from './notification-registry.js';
 import type { ImageCheckerImpl } from './image-checker.js';
+import type { DownloadProviderRegistry } from './binaries/download-provider-registry.js';
+import { DownloadProvider } from './binaries/download-provider.js';
 
 /**
  * Handle the loading of an extension
@@ -161,6 +163,7 @@ export class ExtensionLoader {
     private cliToolRegistry: CliToolRegistry,
     private notificationRegistry: NotificationRegistry,
     private imageCheckerProvider: ImageCheckerImpl,
+    private downloadProviderRegistry: DownloadProviderRegistry,
   ) {
     this.pluginsDirectory = directories.getPluginsDirectory();
     this.pluginsScanDirectory = directories.getPluginsScanDirectory();
@@ -849,6 +852,14 @@ export class ExtensionLoader {
       },
     };
 
+    // Binary download client
+    const downloadProviderRegistry = this.downloadProviderRegistry;
+    const binaries: typeof containerDesktopAPI.binaries = {
+      registerDownloadProvider(provider: DownloadProvider): Disposable {
+        return downloadProviderRegistry.registerProvider(provider);
+      },
+    };
+
     const kubernetesClient = this.kubernetesClient;
     const kubernetesGeneratorRegistry = this.kubeGeneratorRegistry;
     const kubernetes: typeof containerDesktopAPI.kubernetes = {
@@ -1079,6 +1090,8 @@ export class ExtensionLoader {
       context: contextAPI,
       cli,
       imageChecker,
+      DownloadProvider,
+      binaries,
     };
   }
 
