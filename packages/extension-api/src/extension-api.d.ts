@@ -1366,6 +1366,79 @@ declare module '@podman-desktop/api' {
     export function createCustomPick<T extends CustomPickItem>(): CustomPick<T>;
   }
 
+  /**
+   * Represents information about a binary release, including its ID, name, and associated assets.
+   */
+  export interface BinaryReleaseInfo {
+    id: string;
+    name: string;
+    assets: BinaryReleaseAsset[];
+  }
+
+  /**
+   * Contains details about a single asset within a binary release.
+   */
+  export interface BinaryReleaseAsset {
+    name: string;
+  }
+
+  /**
+   * Abstract class providing a blueprint for CLI tool providers.
+   * Defines methods for managing binary releases, including fetching, downloading, and update checks.
+   */
+  export abstract class CliToolProvider {
+    protected constructor(public readonly type: string) {}
+
+    /**
+     * Fetches a list of binary releases from a specified URL.
+     * An optional limit can specify the maximum number of releases to retrieve.
+     *
+     * @param url The URL to fetch releases from.
+     * @param limit Optional limit on the number of releases to fetch.
+     * @returns A promise resolving to an array of BinaryReleaseInfo objects.
+     */
+    abstract getReleases(url: URL, limit?: number): Promise<BinaryReleaseInfo[]>;
+
+    /**
+     * Downloads a specified asset from a binary release to a given destination.
+     *
+     * @param url The URL to download from.
+     * @param release The release information.
+     * @param asset The asset to download.
+     * @param destination The destination path for the download.
+     * @returns A promise that resolves when the download is complete.
+     */
+    abstract download(
+      url: URL,
+      release: BinaryReleaseInfo,
+      asset: BinaryReleaseAsset,
+      destination: string,
+    ): Promise<void>;
+
+    /**
+     * Checks whether a local version of a tool is outdated compared to the remote version.
+     *
+     * @param url The URL to check for updates.
+     * @param localVersion The local version of the tool.
+     * @returns A promise resolving to a boolean indicating if an update is available.
+     */
+    abstract hasUpdate(url: URL, localVersion: string): Promise<boolean>;
+  }
+
+  /**
+   * Namespace for managing binary downloads and installations.
+   * Provides functionality to register CLI tool providers for handling binary operations.
+   */
+  export namespace binaries {
+    /**
+     * Registers a CLI tool provider for downloading binaries.
+     *
+     * @param provider The CLI tool provider to register.
+     * @returns A Disposable object representing the registration.
+     */
+    export function registerCliToolProvider(provider: CliToolProvider): Disposable;
+  }
+
   export namespace kubernetes {
     // Path to the configuration file
     export function getKubeconfig(): Uri;
@@ -2494,6 +2567,10 @@ declare module '@podman-desktop/api' {
   }
 
   export type CliToolState = 'registered';
+
+  export interface CliUpdateHandler {
+    getCurrentVersion(): Promise<string>;
+  }
 
   export interface CliTool extends Disposable {
     id: string;
