@@ -1366,6 +1366,47 @@ declare module '@podman-desktop/api' {
     export function createCustomPick<T extends CustomPickItem>(): CustomPick<T>;
   }
 
+  /**
+   * Holds information regarding the latest releases, usually given as an id and name
+   */
+  export interface BinaryReleaseInfo {
+    id: string;
+    name: string;
+    assets: BinaryReleaseAsset[];
+  }
+  export interface BinaryReleaseAsset {
+    name: string;
+  }
+
+  export abstract class CliToolProvider {
+    protected constructor(public readonly type: string) {}
+
+    abstract getReleases(url: URL, limit?: number): Promise<BinaryReleaseInfo[]>;
+
+    abstract download(
+      url: URL,
+      release: BinaryReleaseInfo,
+      asset: BinaryReleaseAsset,
+      destination: string,
+    ): Promise<void>;
+
+    // Returns boolean if the local version is older than the remote version (checks via URL + seeing what releases are available)
+    abstract hasUpdate(url: URL, localVersion: string): Promise<boolean>;
+  }
+
+  /**
+   * Binaries is intended to provide a way to download binaries from a given URL
+   * as well as a way to install them locally
+   */
+  export namespace binaries {
+    /**
+     * Registers a download provider which will be used to download binaries from a given URL.
+     *
+     * @param provider
+     */
+    export function registerCliToolProvider(provider: CliToolProvider): Disposable;
+  }
+
   export namespace kubernetes {
     // Path to the configuration file
     export function getKubeconfig(): Uri;
@@ -2494,6 +2535,10 @@ declare module '@podman-desktop/api' {
   }
 
   export type CliToolState = 'registered';
+
+  export interface CliUpdateHandler {
+    getCurrentVersion(): Promise<string>;
+  }
 
   export interface CliTool extends Disposable {
     id: string;
