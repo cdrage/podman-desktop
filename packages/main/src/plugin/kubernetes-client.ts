@@ -1078,6 +1078,18 @@ export class KubernetesClient {
   }
 
   /**
+   * Load manifests from a YAML string.
+   * @param yaml the YAML string
+   * @return an array of Kubernetes resources
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async loadManifestsFromYAML(yaml: string): Promise<any[]> {
+    const manifests = parseAllDocuments(yaml, { customTags: this.getTags });
+    // filter out null manifests
+    return manifests.map(manifest => manifest.toJSON()).filter(manifest => !!manifest);
+  }
+
+  /**
    * Apply a given yaml file to a context, i.e. 'kubectl apply -f'. Resources that exist
    * on the context are patched, and any new resources are created.
    *
@@ -1092,6 +1104,18 @@ export class KubernetesClient {
     namespace?: string,
   ): Promise<KubernetesObject[]> {
     return this.syncResources(context, manifests, 'apply', namespace);
+  }
+
+  /**
+   * Similar to applyResourcesFromFile, but instead you can pass in a string that contains the YAML
+   *
+   * @param context a context
+   * @param yaml content consisting of a stringified YAML
+   * @return an array of resources created
+   */
+  async applyResourcesFromYAML(context: string, yaml: string): Promise<KubernetesObject[]> {
+    const manifests = await this.loadManifestsFromYAML(yaml);
+    return this.applyResources(context, manifests, 'apply');
   }
 
   /**
