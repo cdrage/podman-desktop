@@ -1175,6 +1175,11 @@ export class ExtensionLoader {
       inspectManifest(engineId: string, id: string): Promise<containerDesktopAPI.ManifestInspectInfo> {
         return containerProviderRegistry.inspectManifest(engineId, id);
       },
+
+      pushManifest(manifestOptions: containerDesktopAPI.ManifestPushOptions): Promise<void> {
+        return containerProviderRegistry.pushManifest(manifestOptions);
+      },
+
       replicatePodmanContainer(
         source: { engineId: string; id: string },
         target: { engineId: string },
