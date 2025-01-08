@@ -28,6 +28,8 @@ import { get } from 'svelte/store';
 import { beforeAll, expect, test, vi } from 'vitest';
 
 import { onboardingList } from '/@/stores/onboarding';
+import { providerInfos } from '/@/stores/providers';
+import type { ProviderInfo } from '/@api/provider-info';
 
 import WelcomePage from './WelcomePage.svelte';
 
@@ -176,4 +178,93 @@ test('Expect welcome screen to show three checked onboarding providers', async (
   const checkbox3 = screen.getByRole('checkbox', { name: 'FooBar3 checkbox' });
   expect(checkbox3).toBeInTheDocument();
   expect(checkbox3).toBeChecked();
+});
+
+test('Make sure the provider with name podman appears first even if its 2nd in the list', async () => {
+  providerInfos.set([
+    {
+      extensionId: 'test.extension.id',
+      containerProviderConnectionCreation: false,
+    } as unknown as ProviderInfo,
+    {
+      extensionId: 'test.extension.id2',
+      containerProviderConnectionCreation: false,
+    } as unknown as ProviderInfo,
+    {
+      extensionId: 'podman.extension.id',
+      containerProviderConnectionCreation: true,
+    } as unknown as ProviderInfo,
+  ]);
+
+  while (get(providerInfos).length === 0) {
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+
+  onboardingList.set([
+    {
+      extension: 'test.extension.id',
+      title: 'onboarding',
+      name: 'foobar1',
+      displayName: 'FooBar1',
+      icon: 'data:image/png;base64,foobar1',
+      steps: [
+        {
+          id: 'step',
+          title: 'step',
+          state: 'failed',
+          completionEvents: [],
+        },
+      ],
+      enablement: 'true',
+    },
+    {
+      extension: 'podman.extension.id',
+      title: 'onboarding',
+      name: 'podman',
+      displayName: 'Podman',
+      icon: 'data:image/png;base64,podman',
+      steps: [
+        {
+          id: 'step',
+          title: 'step',
+          state: 'failed',
+          completionEvents: [],
+        },
+      ],
+      enablement: 'true',
+    },
+    {
+      extension: 'test.extension.id2',
+      title: 'onboarding',
+      name: 'foobar3',
+      displayName: 'FooBar3',
+      icon: 'data:image/png;base64,foobar3',
+      steps: [
+        {
+          id: 'step',
+          title: 'step',
+          state: 'failed',
+          completionEvents: [],
+        },
+      ],
+      enablement: 'true',
+    },
+  ]);
+
+  // wait until the onboarding list is populated
+  while (get(onboardingList).length === 0) {
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+
+  await waitRender({ showWelcome: true });
+
+  // wait until aria-label 'providerList' is populated
+  while (screen.queryAllByLabelText('providerList').length === 0) {
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+
+  // In the div 'providerList' the first div should be the one with the name 'podman'
+  const providerList = screen.getByLabelText('providerList');
+  const firstChild = providerList.children[0];
+  expect(firstChild).toHaveTextContent('Podman');
 });
