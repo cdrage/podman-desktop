@@ -91,6 +91,24 @@ let conditionsColumn = new TableColumn<DeploymentUI>('Conditions', {
 
 let podsColumn = new TableColumn<DeploymentUI>('Pods', {
   renderer: DeploymentColumnPods,
+  // We use object.ready and object.replicas to sort the deployments
+  // List the ones which are not ready == replicas first since they are "not" ready
+  // So we essentially sort by ready first
+  comparator: (a, b) => {
+    // Less priority to the ones which are not ready
+    if (a.ready === a.replicas && b.ready === b.replicas) {
+      return 0;
+    }
+    // Higher priority since they are 1-1
+    if (a.ready === a.replicas) {
+      return 1;
+    }
+    // Sort them below the ones which are not ready
+    if (b.ready === b.replicas) {
+      return -1;
+    }
+    return 0;
+  },
 });
 
 let ageColumn = new TableColumn<DeploymentUI, Date | undefined>('Age', {

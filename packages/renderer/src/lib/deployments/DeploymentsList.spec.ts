@@ -28,9 +28,10 @@ import { get } from 'svelte/store';
 /* eslint-enable import/no-duplicates */
 import { beforeAll, beforeEach, expect, test, vi } from 'vitest';
 
-import { kubernetesCurrentContextDeployments } from '/@/stores/kubernetes-contexts-state';
+import { kubernetesCurrentContextDeployments, kubernetesCurrentContextDeploymentsFiltered } from '/@/stores/kubernetes-contexts-state';
 
 import DeploymentsList from './DeploymentsList.svelte';
+import type { DeploymentUI } from './DeploymentUI';
 
 const kubernetesRegisterGetCurrentContextResourcesMock = vi.fn();
 
@@ -194,4 +195,68 @@ test('Expect user confirmation to pop up when preferences require', async () => 
   await fireEvent.click(deleteButton);
   expect(window.showMessageBox).toHaveBeenCalledTimes(2);
   await vi.waitFor(() => expect(window.kubernetesDeleteDeployment).toHaveBeenCalled());
+});
+
+test('Expect pods column to sort correctly', async () => {
+  const deployment: V1Deployment = {
+    apiVersion: 'apps/v1',
+    kind: 'Deployment',
+    metadata: {
+      name: 'my-deployment',
+      namespace: 'test-namespace',
+    },
+    spec: {
+      replicas: 2,
+      selector: {},
+      template: {},
+    },
+  };
+
+  const deployment2: V1Deployment = {
+    apiVersion: 'apps/v1',
+    kind: 'Deployment',
+    metadata: {
+      name: 'my-deployment2',
+      namespace: 'test-namespace',
+    },
+    spec: {
+      replicas: 2,
+      selector: {},
+      template: {},
+    },
+  };
+
+  const deployments: V1Deployment[] = [
+    deployment as V1Deployment,
+    deployment2 as V1Deployment,
+  ];
+  kubernetesRegisterGetCurrentContextResourcesMock.mockResolvedValue(deployments);
+
+  // wait while store is populated
+  while (get(kubernetesCurrentContextDeployments).length === 0) {
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+  await waitRender({});
+
+  // Click on the pods column header to sort
+  const podsColumnHeader = screen.getByRole('columnheader', { name: 'Pods' });
+  expect(podsColumnHeader).toBeInTheDocument();
+  await fireEvent.click(podsColumnHeader);
+
+  // Verify that rows are sorted correctly
+  const rows = screen.getAllByRole('row');
+  expect(rows).toHaveLength(deployments.length);
+
+  const sortedDeployments = [...deployments].sort((a, b) => {
+    if (a.ready === a.replicas && b.ready === b.replicas) return 0;
+    if (a.ready === a.replicas) return -1;
+    if (b.ready === b.replicas) return 1;
+    return 0;
+  });
+
+  sortedDeployments.forEach((deployment, index) => {
+    const row = rows[index + 1]; // Skip header row
+    const cell = within(row).getByRole('cell', { name: `${deployment.ready} / ${deployment.replicas}` });
+    expect(cell).toBeInTheDocument();
+  });
 });
