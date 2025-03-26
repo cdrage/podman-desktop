@@ -1386,6 +1386,10 @@ export async function activate(extensionContext: extensionApi.ExtensionContext):
   // Check on initial setup
   await checkDisguisedPodmanSocket();
 
+  // Also check on initial setup if the user has enabled compatibility mode / if the socket is disguised.
+  // if not, then we show the error notification.
+  await checkDisguisedSocketAndNotify();
+
   // Update the status of the provider if the socket is changed, created or deleted
   disguisedPodmanSocketWatcher = setupDisguisedPodmanSocketWatcher(provider, getSocketPath());
   if (disguisedPodmanSocketWatcher) {
@@ -2277,6 +2281,31 @@ function setupDisguisedPodmanSocketWatcher(
   });
 
   return socketWatcher;
+}
+
+// Function that checks the configuration if "configurationCompatibilityMode" is enabled
+// and then checks if we are disguised.
+// If this does not match, alert the user via the task manager / showErrorMesage notification.
+export async function checkDisguisedSocketAndNotify(): Promise<void> {
+
+  // Check if our configuration says "true" meaning that we SHOULD be disguised.
+  const compatibilityMode = getCompatibilityModeSetting();
+
+  // Actually check that we are disguised
+  const disguisedCheck = await isDisguisedPodman();
+
+  console.log('compatibilityMode', compatibilityMode);
+  console.log('disguisedCheck', disguisedCheck);
+
+  // If compatibilityMode = true and it does not match our disguised check, we need to alert the user via task manager.
+  if (compatibilityMode && compatibilityMode !== disguisedCheck) {
+
+    console.log("compatibilityMode and disguisedCheck don't match, alerting!");
+    await extensionApi.window.showErrorMessage(
+      "Podman isn't running in Docker compatibility mode, even though it’s enabled. Another tool may be using /var/run/docker.sock. Check your system and re-enable Docker compatibility if needed.",
+      'OK'
+    );
+  }
 }
 
 export async function checkDisguisedPodmanSocket(): Promise<void> {
