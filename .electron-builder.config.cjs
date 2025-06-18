@@ -134,6 +134,8 @@ const config = {
   },
   nsis: {
     artifactName: `podman-desktop${artifactNameSuffix}-\${version}-setup-\${arch}.\${ext}`,
+    perMachine: false,
+    oneClick: false,
   },
   win: {
     target: [
