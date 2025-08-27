@@ -159,6 +159,7 @@ import type {
   PlayKubeInfo,
 } from './dockerode/libpod-dockerode.js';
 import { EditorInit } from './editor-init.js';
+import { EnterpriseInit } from './enterprise/enterprise-init.js';
 import type { Emitter } from './events/emitter.js';
 import { ExperimentalConfigurationManager } from './experimental-configuration-manager.js';
 import { ExperimentalFeatureFeedbackHandler } from './experimental-feature-feedback-handler.js';
@@ -3138,6 +3139,18 @@ export class PluginSystem {
     }
     extensionsUpdater.init().catch((err: unknown) => console.error('Unable to perform extension updates', err));
     autoStartEngine.start().catch((err: unknown) => console.error('Unable to perform autostart', err));
+
+    // ENTERPRISE INITIALIZATION
+    //
+    // This "initiates" the enterprise configuration to do any Podman Desktop changes.
+    // there is a list of different configuration values which are applied after initialization.
+    container.bind<EnterpriseInit>(EnterpriseInit).toSelf().inSingletonScope();
+    const enterpriseInit = container.get<EnterpriseInit>(EnterpriseInit);
+
+    // Under NO circumstances do we want this to "fail" by accident and cause the application to not start up, so
+    // we make sure that we catch any error and output it to the console as part of the Enterprise initialization process.
+    enterpriseInit.init().catch((err: unknown) => console.error('Unable to perform enterprise initialization: ', err));
+
     return this.extensionLoader;
   }
 
