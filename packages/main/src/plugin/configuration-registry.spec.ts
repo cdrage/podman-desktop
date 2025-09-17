@@ -17,10 +17,12 @@
  ***********************************************************************/
 
 import * as fs from 'node:fs';
+import * as path from 'node:path';
 
 import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import type { ApiSenderType } from '/@/plugin/api.js';
+import { CONFIGURATION_ADMIN_DEFAULTS_SCOPE, CONFIGURATION_DEFAULT_SCOPE } from '/@api/configuration/constants.js';
 import type { IConfigurationNode } from '/@api/configuration/models.js';
 import type { IDisposable } from '/@api/disposable.js';
 
@@ -33,6 +35,18 @@ let configurationRegistry: ConfigurationRegistry;
 // mock the fs methods
 const readFileSync = vi.spyOn(fs, 'readFileSync');
 const cpSync = vi.spyOn(fs, 'cpSync');
+const existsSync = vi.spyOn(fs, 'existsSync');
+const mkdirSync = vi.spyOn(fs, 'mkdirSync');
+const writeFileSync = vi.spyOn(fs, 'writeFileSync');
+
+// mock util functions
+vi.mock('../util.js', () => ({
+  isMac: vi.fn(),
+  isWindows: vi.fn(),
+  isLinux: vi.fn(),
+}));
+
+const { isMac, isWindows, isLinux } = await import('../util.js');
 
 const getConfigurationDirectoryMock = vi.fn();
 const directories = {
@@ -57,6 +71,9 @@ beforeEach(() => {
   vi.resetAllMocks();
   vi.clearAllMocks();
   getConfigurationDirectoryMock.mockReturnValue('/my-config-dir');
+  existsSync.mockReturnValue(true);
+  mkdirSync.mockReturnValue(undefined);
+  writeFileSync.mockReturnValue(undefined);
 
   configurationRegistry = new ConfigurationRegistry(apiSender, directories);
   readFileSync.mockReturnValue(JSON.stringify({}));
@@ -375,4 +392,158 @@ test('should remove the object configuration if value is equal to default one', 
     expect.anything(),
     expect.stringContaining(JSON.stringify({}, undefined, 2)),
   );
+});
+
+describe('Admin Defaults', () => {
+
+  beforeEach(() => {
+    vi.resetAllMocks();
+    vi.clearAllMocks();
+    getConfigurationDirectoryMock.mockReturnValue('/my-config-dir');
+    existsSync.mockReturnValue(true);
+    mkdirSync.mockReturnValue(undefined);
+    writeFileSync.mockReturnValue(undefined);
+    cpSync.mockReturnValue(undefined);
+    readFileSync.mockReturnValue(JSON.stringify({}));
+  });
+
+  test('should get correct admin defaults file path for Mac', () => {
+    vi.mocked(isMac).mockReturnValue(true);
+    vi.mocked(isWindows).mockReturnValue(false);
+    vi.mocked(isLinux).mockReturnValue(false);
+
+    const registry = new ConfigurationRegistry(apiSender, directories);
+    const adminDefaultsFile = registry['getAdminDefaultsFile']();
+    expect(adminDefaultsFile).toBe('/Library/Application Support/com.podman.desktop/default-settings.json');
+  });
+
+  test('should get correct admin defaults file path for Windows', () => {
+    vi.mocked(isMac).mockReturnValue(false);
+    vi.mocked(isWindows).mockReturnValue(true);
+    vi.mocked(isLinux).mockReturnValue(false);
+
+    process.env.PROGRAMDATA = 'C:\\ProgramData';
+    const registry = new ConfigurationRegistry(apiSender, directories);
+    const adminDefaultsFile = registry['getAdminDefaultsFile']();
+    expect(adminDefaultsFile).toBe(path.join('C:\\ProgramData', 'PodmanDesktop', 'default-settings.json'));
+  });
+
+  test('should get correct admin defaults file path for Linux', () => {
+    vi.mocked(isMac).mockReturnValue(false);
+    vi.mocked(isWindows).mockReturnValue(false);
+    vi.mocked(isLinux).mockReturnValue(true);
+
+    const registry = new ConfigurationRegistry(apiSender, directories);
+    const adminDefaultsFile = registry['getAdminDefaultsFile']();
+    expect(adminDefaultsFile).toBe('/usr/share/podman-desktop/default-settings.json');
+  });
+
+  test('should fallback to Linux path for unknown platforms', () => {
+    vi.mocked(isMac).mockReturnValue(false);
+    vi.mocked(isWindows).mockReturnValue(false);
+    vi.mocked(isLinux).mockReturnValue(false);
+
+    const registry = new ConfigurationRegistry(apiSender, directories);
+    const adminDefaultsFile = registry['getAdminDefaultsFile']();
+    expect(adminDefaultsFile).toBe('/usr/share/podman-desktop/default-settings.json');
+  });
+
+  test('should load admin defaults when file exists', () => {
+    const adminDefaults = { 'admin.setting': 'adminValue' };
+    existsSync.mockImplementation((filePath: string) => {
+      if (typeof filePath === 'string' && filePath.includes('default-settings.json')) {
+        return true;
+      }
+      return true;
+    });
+    readFileSync.mockImplementation((filePath: string) => {
+      if (typeof filePath === 'string' && filePath.includes('default-settings.json')) {
+        return JSON.stringify(adminDefaults);
+      }
+      return JSON.stringify({});
+    });
+
+    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    const registry = new ConfigurationRegistry(apiSender, directories);
+    registry.init();
+
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Loaded admin defaults from:'));
+    consoleSpy.mockRestore();
+  });
+
+  test('should handle missing admin defaults file gracefully', () => {
+    existsSync.mockImplementation((filePath: string) => {
+      if (typeof filePath === 'string' && filePath.includes('default-settings.json')) {
+        return false;
+      }
+      return true;
+    });
+
+    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    const registry = new ConfigurationRegistry(apiSender, directories);
+    registry.init();
+
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Admin defaults file not found at:'));
+    consoleSpy.mockRestore();
+  });
+
+  test('should handle corrupted admin defaults file gracefully', () => {
+    existsSync.mockImplementation((filePath: string) => {
+      if (typeof filePath === 'string' && filePath.includes('default-settings.json')) {
+        return true;
+      }
+      return true;
+    });
+    readFileSync.mockImplementation((filePath: string) => {
+      if (typeof filePath === 'string' && filePath.includes('default-settings.json')) {
+        return 'invalid json';
+      }
+      return JSON.stringify({});
+    });
+
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const registry = new ConfigurationRegistry(apiSender, directories);
+    registry.init();
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Failed to parse admin defaults from'),
+      expect.anything(),
+    );
+    consoleErrorSpy.mockRestore();
+  });
+
+  test('should create admin defaults configuration value map', () => {
+    const registry = new ConfigurationRegistry(apiSender, directories);
+    registry.init();
+
+    const configurationValues = registry['configurationValues'];
+    expect(configurationValues.has(CONFIGURATION_ADMIN_DEFAULTS_SCOPE)).toBe(true);
+    expect(configurationValues.has(CONFIGURATION_DEFAULT_SCOPE)).toBe(true);
+  });
+
+  test('should load admin defaults configuration with valid JSON', () => {
+    const adminDefaults = { 'admin.setting': 'adminValue', 'another.setting': 'anotherValue' };
+    existsSync.mockImplementation((filePath: string) => {
+      if (typeof filePath === 'string' && filePath.includes('default-settings.json')) {
+        return true;
+      }
+      return true;
+    });
+    readFileSync.mockImplementation((filePath: string) => {
+      if (typeof filePath === 'string' && filePath.includes('default-settings.json')) {
+        return JSON.stringify(adminDefaults);
+      }
+      return JSON.stringify({});
+    });
+
+    const registry = new ConfigurationRegistry(apiSender, directories);
+    registry.init();
+
+    const configurationValues = registry['configurationValues'];
+    const adminConfig = configurationValues.get(CONFIGURATION_ADMIN_DEFAULTS_SCOPE);
+    expect(adminConfig).toEqual(adminDefaults);
+  });
 });

@@ -18,3 +18,9 @@
 
 export const CONFIGURATION_DEFAULT_SCOPE = 'DEFAULT';
 export const CONFIGURATION_ONBOARDING_SCOPE = 'Onboarding';
+export const CONFIGURATION_ADMIN_DEFAULTS_SCOPE = 'ADMIN_DEFAULTS';
+
+export const ADMIN_DEFAULTS_FILE_MAC = '/Library/Application Support/com.podman.desktop/default-settings.json';
+export const ADMIN_DEFAULTS_FILE_WINDOWS_DIR = 'PodmanDesktop';
+export const ADMIN_DEFAULTS_FILE_WINDOWS_FILE = 'default-settings.json';
+export const ADMIN_DEFAULTS_FILE_LINUX = '/usr/share/podman-desktop/default-settings.json';

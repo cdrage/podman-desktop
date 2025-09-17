@@ -1,5 +1,5 @@
 /**********************************************************************
- * Copyright (C) 2024 Red Hat, Inc.
+ * Copyright (C) 2025 Red Hat, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@
 
 import type * as containerDesktopAPI from '@podman-desktop/api';
 import { beforeEach, expect, test, vi } from 'vitest';
+
+import { CONFIGURATION_ADMIN_DEFAULTS_SCOPE, CONFIGURATION_DEFAULT_SCOPE } from '/@api/configuration/constants.js';
 
 import type { ApiSenderType } from './api.js';
 import { ConfigurationImpl } from './configuration-impl.js';
@@ -91,4 +93,110 @@ test('Uses localKey when deleting values', async () => {
     key: 'prefix.key',
     value: undefined,
   });
+});
+
+
+test('should return value from configuration when present', () => {
+  const map = new Map<string, { [key: string]: unknown }>();
+  map.set(CONFIGURATION_DEFAULT_SCOPE, { 'test.section.key': 'testValue' });
+
+  const config = new ConfigurationImpl(
+    { send: vi.fn() } as unknown as ApiSenderType,
+    vi.fn(),
+    map,
+    'test.section',
+    CONFIGURATION_DEFAULT_SCOPE,
+  );
+
+  const result = config.get<string>('key');
+  expect(result).toBe('testValue');
+});
+
+test('should return default value when configuration value is undefined', () => {
+  const map = new Map<string, { [key: string]: unknown }>();
+  const config = new ConfigurationImpl(
+    { send: vi.fn() } as unknown as ApiSenderType,
+    vi.fn(),
+    map,
+    'test.section',
+    CONFIGURATION_DEFAULT_SCOPE,
+  );
+
+  const result = config.get<string>('nonexistent', 'defaultValue');
+  expect(result).toBe('defaultValue');
+});
+
+test('should return true when value exists', () => {
+  const map = new Map<string, { [key: string]: unknown }>();
+  map.set(CONFIGURATION_DEFAULT_SCOPE, { 'test.section.key': 'testValue' });
+
+  const config = new ConfigurationImpl(
+    { send: vi.fn() } as unknown as ApiSenderType,
+    vi.fn(),
+    map,
+    'test.section',
+    CONFIGURATION_DEFAULT_SCOPE,
+  );
+
+  const result = config.has('key');
+  expect(result).toBe(true);
+});
+
+test('should return false when value does not exist', () => {
+  const map = new Map<string, { [key: string]: unknown }>();
+  const config = new ConfigurationImpl(
+    { send: vi.fn() } as unknown as ApiSenderType,
+    vi.fn(),
+    map,
+    'test.section',
+    CONFIGURATION_DEFAULT_SCOPE,
+  );
+
+  const result = config.has('nonexistent');
+  expect(result).toBe(false);
+});
+
+test('should return admin defaults scope for admin defaults configuration', () => {
+  const map = new Map<string, { [key: string]: unknown }>();
+  const config = new ConfigurationImpl(
+    { send: vi.fn() } as unknown as ApiSenderType,
+    vi.fn(),
+    map,
+    'test.section',
+    CONFIGURATION_ADMIN_DEFAULTS_SCOPE,
+  );
+
+  expect(config.getConfigurationKey()).toBe(CONFIGURATION_ADMIN_DEFAULTS_SCOPE);
+});
+
+test('should get values from admin defaults scope configuration', () => {
+  const map = new Map<string, { [key: string]: unknown }>();
+  map.set(CONFIGURATION_ADMIN_DEFAULTS_SCOPE, { 'test.section.key': 'adminValue' });
+
+  const config = new ConfigurationImpl(
+    { send: vi.fn() } as unknown as ApiSenderType,
+    vi.fn(),
+    map,
+    'test.section',
+    CONFIGURATION_ADMIN_DEFAULTS_SCOPE,
+  );
+
+  const result = config.get<string>('key');
+  expect(result).toBe('adminValue');
+});
+
+test('should check if values exist in admin defaults scope configuration', () => {
+  const map = new Map<string, { [key: string]: unknown }>();
+  map.set(CONFIGURATION_ADMIN_DEFAULTS_SCOPE, { 'test.section.existingKey': 'value' });
+
+  const config = new ConfigurationImpl(
+    { send: vi.fn() } as unknown as ApiSenderType,
+    vi.fn(),
+    map,
+    'test.section',
+    CONFIGURATION_ADMIN_DEFAULTS_SCOPE,
+  );
+
+  expect(config.has('existingKey')).toBe(true);
+  expect(config.has('nonExistentKey')).toBe(false);
 });

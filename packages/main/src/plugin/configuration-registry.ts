@@ -23,7 +23,7 @@ import { isDeepStrictEqual } from 'node:util';
 import type * as containerDesktopAPI from '@podman-desktop/api';
 import { inject, injectable } from 'inversify';
 
-import { CONFIGURATION_DEFAULT_SCOPE } from '/@api/configuration/constants.js';
+import { ADMIN_DEFAULTS_FILE_LINUX, ADMIN_DEFAULTS_FILE_MAC, ADMIN_DEFAULTS_FILE_WINDOWS_DIR, ADMIN_DEFAULTS_FILE_WINDOWS_FILE, CONFIGURATION_ADMIN_DEFAULTS_SCOPE, CONFIGURATION_DEFAULT_SCOPE } from '/@api/configuration/constants.js';
 import type {
   ConfigurationScope,
   IConfigurationChangeEvent,
@@ -35,6 +35,7 @@ import type { IDisposable } from '/@api/disposable.js';
 import type { Event } from '/@api/event.js';
 import type { NotificationCardOptions } from '/@api/notification.js';
 
+import { isLinux, isMac, isWindows } from '../util.js';
 import { ApiSenderType } from './api.js';
 import { ConfigurationImpl } from './configuration-impl.js';
 import { Directories } from './directories.js';
@@ -69,11 +70,25 @@ export class ConfigurationRegistry implements IConfigurationRegistry {
     this.configurationContributors = [];
     this.configurationValues = new Map();
     this.configurationValues.set(CONFIGURATION_DEFAULT_SCOPE, {});
+    this.configurationValues.set(CONFIGURATION_ADMIN_DEFAULTS_SCOPE, {});
   }
 
   protected getSettingsFile(): string {
     // create directory if it does not exist
     return path.resolve(this.directories.getConfigurationDirectory(), 'settings.json');
+  }
+
+  protected getAdminDefaultsFile(): string {
+    if (isMac()) {
+      return ADMIN_DEFAULTS_FILE_MAC;
+    } else if (isWindows()) {
+      const programData = process.env.PROGRAMDATA ?? 'C:\\ProgramData';
+      return path.join(programData, ADMIN_DEFAULTS_FILE_WINDOWS_DIR, ADMIN_DEFAULTS_FILE_WINDOWS_FILE);
+    } else if (isLinux()) {
+      return ADMIN_DEFAULTS_FILE_LINUX;
+    }
+    // Fallback for other platforms
+    return ADMIN_DEFAULTS_FILE_LINUX;
   }
 
   public init(): NotificationCardOptions[] {
@@ -111,7 +126,30 @@ export class ConfigurationRegistry implements IConfigurationRegistry {
       configData = {};
     }
     this.configurationValues.set(CONFIGURATION_DEFAULT_SCOPE, configData);
+
+    // Load admin defaults
+    this.loadAdminDefaults();
+
     return notifications;
+  }
+
+  private loadAdminDefaults(): void {
+    const adminDefaultsFile = this.getAdminDefaultsFile();
+    let adminDefaultsData = {};
+
+    if (fs.existsSync(adminDefaultsFile)) {
+      try {
+        const adminDefaultsContent = fs.readFileSync(adminDefaultsFile, 'utf-8');
+        adminDefaultsData = JSON.parse(adminDefaultsContent);
+        console.log(`Loaded admin defaults from: ${adminDefaultsFile}`);
+      } catch (error) {
+        console.error(`Failed to parse admin defaults from ${adminDefaultsFile}:`, error);
+      }
+    } else {
+      console.log(`Admin defaults file not found at: ${adminDefaultsFile}`);
+    }
+
+    this.configurationValues.set(CONFIGURATION_ADMIN_DEFAULTS_SCOPE, adminDefaultsData);
   }
 
   /**
