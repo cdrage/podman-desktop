@@ -52,7 +52,7 @@ function click(): void {
     class:hover:bg-[var(--pd-secondary-nav-text-hover-bg)]={!selected}
     class:hover:border-[var(--pd-secondary-nav-text-hover-bg)]={!selected}>
     <span
-      class="group-hover:block flex gap-x-4 items-center"
+      class="group-hover:block flex gap-x-1 items-center"
       class:flex-row={iconPosition === 'left'}
       class:flex-row-reverse={iconPosition === 'right'}
       class:capitalize={!child}>

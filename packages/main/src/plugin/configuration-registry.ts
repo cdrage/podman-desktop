@@ -23,7 +23,7 @@ import { isDeepStrictEqual } from 'node:util';
 import type * as containerDesktopAPI from '@podman-desktop/api';
 import { inject, injectable } from 'inversify';
 
-import { CONFIGURATION_DEFAULT_SCOPE } from '/@api/configuration/constants.js';
+import { CONFIGURATION_ADMIN_DEFAULTS_SCOPE, CONFIGURATION_DEFAULT_SCOPE } from '/@api/configuration/constants.js';
 import type {
   ConfigurationScope,
   IConfigurationChangeEvent,
@@ -40,6 +40,7 @@ import { ConfigurationImpl } from './configuration-impl.js';
 import { Directories } from './directories.js';
 import { Emitter } from './events/emitter.js';
 import { Disposable } from './types/disposable.js';
+import { isMac, isLinux, isWindows } from '../util.js';
 
 @injectable()
 export class ConfigurationRegistry implements IConfigurationRegistry {
@@ -69,11 +70,25 @@ export class ConfigurationRegistry implements IConfigurationRegistry {
     this.configurationContributors = [];
     this.configurationValues = new Map();
     this.configurationValues.set(CONFIGURATION_DEFAULT_SCOPE, {});
+    this.configurationValues.set(CONFIGURATION_ADMIN_DEFAULTS_SCOPE, {});
   }
 
   protected getSettingsFile(): string {
     // create directory if it does not exist
     return path.resolve(this.directories.getConfigurationDirectory(), 'settings.json');
+  }
+
+  protected getAdminDefaultsFile(): string {
+    if (isMac()) {
+      return '/Library/Application Support/com.podman.desktop/default-settings.json';
+    } else if (isWindows()) {
+      const programData = process.env.PROGRAMDATA || 'C:\\ProgramData';
+      return path.join(programData, 'PodmanDesktop', 'default-settings.json');
+    } else if (isLinux()) {
+      return '/usr/share/podman-desktop/default-settings.json';
+    }
+    // Fallback for other platforms
+    return '/usr/share/podman-desktop/default-settings.json';
   }
 
   public init(): NotificationCardOptions[] {
@@ -111,7 +126,32 @@ export class ConfigurationRegistry implements IConfigurationRegistry {
       configData = {};
     }
     this.configurationValues.set(CONFIGURATION_DEFAULT_SCOPE, configData);
+
+    // Load admin defaults
+    this.loadAdminDefaults();
+
     return notifications;
+  }
+
+  private loadAdminDefaults(): void {
+    const adminDefaultsFile = this.getAdminDefaultsFile();
+
+    if (fs.existsSync(adminDefaultsFile)) {
+      try {
+        const adminDefaultsContent = fs.readFileSync(adminDefaultsFile, 'utf-8');
+        const adminDefaultsData = JSON.parse(adminDefaultsContent);
+        this.configurationValues.set(CONFIGURATION_ADMIN_DEFAULTS_SCOPE, adminDefaultsData);
+        console.log(`Loaded admin defaults from: ${adminDefaultsFile}`);
+      } catch (error) {
+        console.error(`Failed to load admin defaults from ${adminDefaultsFile}:`, error);
+        // Keep empty defaults on error
+        this.configurationValues.set(CONFIGURATION_ADMIN_DEFAULTS_SCOPE, {});
+      }
+    } else {
+      console.log(`Admin defaults file not found at: ${adminDefaultsFile}`);
+      // Keep empty defaults if file doesn't exist
+      this.configurationValues.set(CONFIGURATION_ADMIN_DEFAULTS_SCOPE, {});
+    }
   }
 
   /**

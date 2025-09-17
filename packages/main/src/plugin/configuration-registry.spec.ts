@@ -21,6 +21,7 @@ import * as fs from 'node:fs';
 import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import type { ApiSenderType } from '/@/plugin/api.js';
+import { CONFIGURATION_ADMIN_DEFAULTS_SCOPE } from '/@api/configuration/constants.js';
 import type { IConfigurationNode } from '/@api/configuration/models.js';
 import type { IDisposable } from '/@api/disposable.js';
 
@@ -33,6 +34,9 @@ let configurationRegistry: ConfigurationRegistry;
 // mock the fs methods
 const readFileSync = vi.spyOn(fs, 'readFileSync');
 const cpSync = vi.spyOn(fs, 'cpSync');
+const existsSync = vi.spyOn(fs, 'existsSync');
+const writeFileSync = vi.spyOn(fs, 'writeFileSync');
+const mkdirSync = vi.spyOn(fs, 'mkdirSync');
 
 const getConfigurationDirectoryMock = vi.fn();
 const directories = {
@@ -60,6 +64,9 @@ beforeEach(() => {
 
   configurationRegistry = new ConfigurationRegistry(apiSender, directories);
   readFileSync.mockReturnValue(JSON.stringify({}));
+  writeFileSync.mockImplementation(() => {});
+  mkdirSync.mockImplementation(() => {});
+  existsSync.mockReturnValue(true);
 
   cpSync.mockReturnValue(undefined);
   configurationRegistry.init();
@@ -375,4 +382,89 @@ test('should remove the object configuration if value is equal to default one', 
     expect.anything(),
     expect.stringContaining(JSON.stringify({}, undefined, 2)),
   );
+});
+
+describe('Admin Defaults functionality', () => {
+  test('should load admin defaults from OS-specific location', async () => {
+    // Mock admin defaults file content
+    const adminDefaultsContent = JSON.stringify({
+      'test.admin.setting': 'admin-value',
+      'another.admin.setting': true,
+    });
+
+    // Create a fresh registry for this test
+    const freshRegistry = new ConfigurationRegistry(apiSender, directories);
+
+    // Setup mocks specific to this test
+    existsSync.mockReturnValue(true);
+    readFileSync.mockReturnValueOnce('{}'); // user settings
+    readFileSync.mockReturnValueOnce(adminDefaultsContent); // admin defaults
+    writeFileSync.mockImplementation(() => {});
+    mkdirSync.mockImplementation(() => {});
+
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    freshRegistry.init();
+
+    // Verify admin defaults can be accessed
+    const adminConfig = freshRegistry.getConfiguration('test.admin', CONFIGURATION_ADMIN_DEFAULTS_SCOPE);
+    expect(adminConfig.get('setting')).toBe('admin-value');
+
+    const anotherAdminConfig = freshRegistry.getConfiguration('another.admin', CONFIGURATION_ADMIN_DEFAULTS_SCOPE);
+    expect(anotherAdminConfig.get('setting')).toBe(true);
+
+    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Loaded admin defaults from:'));
+
+    consoleLogSpy.mockRestore();
+  });
+
+  test('should handle missing admin defaults file gracefully', async () => {
+    // Create a fresh registry for this test
+    const freshRegistry = new ConfigurationRegistry(apiSender, directories);
+
+    existsSync.mockReturnValueOnce(true); // user settings directory
+    existsSync.mockReturnValueOnce(true); // user settings file
+    existsSync.mockReturnValueOnce(false); // admin defaults file
+    readFileSync.mockReturnValueOnce('{}'); // user settings
+    writeFileSync.mockImplementation(() => {});
+    mkdirSync.mockImplementation(() => {});
+
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    freshRegistry.init();
+
+    // Verify admin defaults scope exists but is empty
+    const adminConfig = freshRegistry.getConfiguration('test', CONFIGURATION_ADMIN_DEFAULTS_SCOPE);
+    expect(adminConfig.get('nonexistent')).toBeUndefined();
+
+    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Admin defaults file not found at:'));
+
+    consoleLogSpy.mockRestore();
+  });
+
+  test('should handle corrupted admin defaults file gracefully', async () => {
+    // Create a fresh registry for this test
+    const freshRegistry = new ConfigurationRegistry(apiSender, directories);
+
+    existsSync.mockReturnValue(true);
+    readFileSync.mockReturnValueOnce('{}'); // user settings
+    readFileSync.mockReturnValueOnce('invalid json'); // corrupted admin defaults
+    writeFileSync.mockImplementation(() => {});
+    mkdirSync.mockImplementation(() => {});
+
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    freshRegistry.init();
+
+    // Verify admin defaults scope exists but is empty due to error
+    const adminConfig = freshRegistry.getConfiguration('test', CONFIGURATION_ADMIN_DEFAULTS_SCOPE);
+    expect(adminConfig.get('setting')).toBeUndefined();
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Failed to load admin defaults from'),
+      expect.any(Error),
+    );
+
+    consoleErrorSpy.mockRestore();
+  });
 });

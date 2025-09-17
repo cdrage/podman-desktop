@@ -1,5 +1,5 @@
 <script lang="ts">
-import { faFlask } from '@fortawesome/free-solid-svg-icons';
+import { faBuilding, faFlask } from '@fortawesome/free-solid-svg-icons';
 import { SettingsNavItem } from '@podman-desktop/ui-svelte';
 import { onMount } from 'svelte';
 import type { TinroRouteMeta } from 'tinro';
@@ -101,6 +101,16 @@ onMount(() => {
         href="/preferences/experimental"
         selected={meta.url === '/preferences/experimental'}
       />
+    {/if}
+
+    {#if true}
+    <SettingsNavItem
+      title="Enterprise"
+      icon={faBuilding}
+      iconPosition="right"
+      href="/preferences/enterprise"
+      selected={meta.url === '/preferences/enterprise'}
+    />
     {/if}
 
     <!-- Default configuration properties start -->

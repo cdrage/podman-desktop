@@ -21,6 +21,7 @@ import PreferencesRendering from './PreferencesRendering.svelte';
 import PreferencesResourcesRendering from './PreferencesResourcesRendering.svelte';
 import PreferencesVmConnectionRendering from './PreferencesVmConnectionRendering.svelte';
 import { isDefaultScope } from './Util';
+  import PreferencesEnterpriseRendering from './PreferencesEnterpriseRendering.svelte';
 
 let properties: IConfigurationPropertyRecordedSchema[];
 let defaultPrefPageId: string;
@@ -78,6 +79,9 @@ onMount(async () => {
   </Route>
   <Route path="/cli-tools" breadcrumb="CLI Tools">
     <PreferencesCliToolsRendering />
+  </Route>
+  <Route path="/enterprise" breadcrumb="Enterprise">
+    <PreferencesEnterpriseRendering />
   </Route>
   <Route path="/kubernetes-contexts" breadcrumb="Kubernetes Contexts">
     <PreferencesKubernetesContextsRendering />

@@ -79,13 +79,21 @@ export class EnterpriseInit {
     for (const registry of registries) {
       console.log(`Enterprise: Enabling ${registry.name} (${registry.url})`);
 
+      // TODO: CHECK that the registry has already been added (check serverURL) before continuing!
+      // we do this check EVERY time because the "second" registry in the list, may already exist too (rare case)
+      const registryExists = this.imageRegistry.getRegistries().find(r => r.serverUrl === registry.url);
+
       // We PURPOSELY leave username/secret empty so that "Login now!" appears when going to Preferences > Registries.
-      this.imageRegistry.registerRegistry({
-        source: registry.name,
-        serverUrl: registry.url,
-        username: '',
-        secret: '',
-      });
+      if (!registryExists) {
+        this.imageRegistry.registerRegistry({
+          source: registry.name,
+          serverUrl: registry.url,
+          username: '',
+          secret: '',
+        });
+      } else {
+        console.log(`Enterprise: Registry ${registry.name} (${registry.url}) is already enabled.`);
+      }
     }
   }
 }
