@@ -22,6 +22,7 @@ import { beforeEach, expect, test, vi } from 'vitest';
 import {
   CONFIGURATION_DEFAULT_SCOPE,
   CONFIGURATION_SYSTEM_MANAGED_DEFAULTS_SCOPE,
+  CONFIGURATION_SYSTEM_MANAGED_LOCKED_SCOPE,
 } from '/@api/configuration/constants.js';
 
 import type { ApiSenderType } from './api.js';
@@ -223,4 +224,108 @@ test('if there are multiple scopes with different values, make sure we get the r
   expect(resultDefault).toBe('defaultValue');
   const resultAdmin = configAdmin.get<string>('key');
   expect(resultAdmin).toBe('adminValue');
+});
+
+test('should return managed defaults value when configuration key is locked', () => {
+  // Create the scopes with locked configuration
+  const map = new Map<string, { [key: string]: unknown }>();
+  map.set(CONFIGURATION_DEFAULT_SCOPE, { 'telemetry.enabled': false });
+  map.set(CONFIGURATION_SYSTEM_MANAGED_DEFAULTS_SCOPE, { 'telemetry.enabled': true });
+  map.set(CONFIGURATION_SYSTEM_MANAGED_LOCKED_SCOPE, { locked: ['telemetry.enabled'] });
+
+  // Create configuration for default scope
+  const config = new ConfigurationImpl(
+    { send: vi.fn() } as unknown as ApiSenderType,
+    vi.fn(),
+    map,
+    'telemetry',
+    CONFIGURATION_DEFAULT_SCOPE,
+  );
+
+  // Should return managed defaults value (true) instead of user's value (false)
+  const result = config.get<boolean>('enabled');
+  expect(result).toBe(true);
+});
+
+test('should return user value when configuration key is not locked', () => {
+  // Create the scopes with locked configuration for a different key
+  const map = new Map<string, { [key: string]: unknown }>();
+  map.set(CONFIGURATION_DEFAULT_SCOPE, { 'telemetry.enabled': false });
+  map.set(CONFIGURATION_SYSTEM_MANAGED_DEFAULTS_SCOPE, { 'telemetry.enabled': true });
+  map.set(CONFIGURATION_SYSTEM_MANAGED_LOCKED_SCOPE, { locked: ['some.other.key'] });
+
+  // Create configuration for default scope
+  const config = new ConfigurationImpl(
+    { send: vi.fn() } as unknown as ApiSenderType,
+    vi.fn(),
+    map,
+    'telemetry',
+    CONFIGURATION_DEFAULT_SCOPE,
+  );
+
+  // Should return user's value (false) since telemetry.enabled is not locked
+  const result = config.get<boolean>('enabled');
+  expect(result).toBe(false);
+});
+
+test('should return user value when locked list is empty', () => {
+  // Create the scopes with empty locked list
+  const map = new Map<string, { [key: string]: unknown }>();
+  map.set(CONFIGURATION_DEFAULT_SCOPE, { 'telemetry.enabled': false });
+  map.set(CONFIGURATION_SYSTEM_MANAGED_DEFAULTS_SCOPE, { 'telemetry.enabled': true });
+  map.set(CONFIGURATION_SYSTEM_MANAGED_LOCKED_SCOPE, { locked: [] });
+
+  // Create configuration for default scope
+  const config = new ConfigurationImpl(
+    { send: vi.fn() } as unknown as ApiSenderType,
+    vi.fn(),
+    map,
+    'telemetry',
+    CONFIGURATION_DEFAULT_SCOPE,
+  );
+
+  // Should return user's value (false) since nothing is locked
+  const result = config.get<boolean>('enabled');
+  expect(result).toBe(false);
+});
+
+test('should return user value when no locked configuration exists', () => {
+  // Create the scopes without locked configuration
+  const map = new Map<string, { [key: string]: unknown }>();
+  map.set(CONFIGURATION_DEFAULT_SCOPE, { 'telemetry.enabled': false });
+  map.set(CONFIGURATION_SYSTEM_MANAGED_DEFAULTS_SCOPE, { 'telemetry.enabled': true });
+
+  // Create configuration for default scope
+  const config = new ConfigurationImpl(
+    { send: vi.fn() } as unknown as ApiSenderType,
+    vi.fn(),
+    map,
+    'telemetry',
+    CONFIGURATION_DEFAULT_SCOPE,
+  );
+
+  // Should return user's value (false) since there's no locked configuration
+  const result = config.get<boolean>('enabled');
+  expect(result).toBe(false);
+});
+
+test('should return default value when key is locked but not in managed defaults', () => {
+  // Create the scopes with locked key but no managed defaults value
+  const map = new Map<string, { [key: string]: unknown }>();
+  map.set(CONFIGURATION_DEFAULT_SCOPE, {});
+  map.set(CONFIGURATION_SYSTEM_MANAGED_DEFAULTS_SCOPE, {});
+  map.set(CONFIGURATION_SYSTEM_MANAGED_LOCKED_SCOPE, { locked: ['telemetry.enabled'] });
+
+  // Create configuration for default scope
+  const config = new ConfigurationImpl(
+    { send: vi.fn() } as unknown as ApiSenderType,
+    vi.fn(),
+    map,
+    'telemetry',
+    CONFIGURATION_DEFAULT_SCOPE,
+  );
+
+  // Should return default value since key is locked but not in managed defaults
+  const result = config.get<boolean>('enabled', true);
+  expect(result).toBe(true);
 });
