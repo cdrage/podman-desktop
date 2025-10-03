@@ -59,12 +59,15 @@ export class ConfigurationImpl implements containerDesktopAPI.Configuration {
     // If locked, return the value from managed defaults instead of user config
     if (this.scope === CONFIGURATION_DEFAULT_SCOPE) {
       const lockedConfig = this.configurationValues.get(CONFIGURATION_SYSTEM_MANAGED_LOCKED_SCOPE);
-      if (lockedConfig && lockedConfig['locked'] && Array.isArray(lockedConfig['locked'])) {
+      if (lockedConfig?.['locked'] && Array.isArray(lockedConfig['locked'])) {
         const lockedKeys = lockedConfig['locked'] as string[];
         if (lockedKeys.includes(localKey)) {
           // This key is locked, return value from managed defaults
           const managedDefaults = this.configurationValues.get(CONFIGURATION_SYSTEM_MANAGED_DEFAULTS_SCOPE);
           if (managedDefaults && managedDefaults[localKey] !== undefined) {
+            console.log(
+              `[Managed-by]: Configuration key '${localKey}' is locked. Returning managed default value instead of user value.`,
+            );
             return managedDefaults[localKey] as T;
           }
         }
