@@ -156,13 +156,16 @@ describe('LockedConfiguration', () => {
     expect(consoleLogMock).toHaveBeenCalledWith(expect.stringContaining('[Managed-by]: Loaded managed locked from:'));
   });
 
-  test('getContent should log error message when file loading fails', async () => {
+  test('getContent should log error message when file loading fails with non-ENOENT error', async () => {
     isMacMock.mockReturnValue(true);
     isWindowsMock.mockReturnValue(false);
     isLinuxMock.mockReturnValue(false);
 
     const readFileMock = vi.spyOn(fs.promises, 'readFile');
-    readFileMock.mockRejectedValue(new Error('Read error'));
+    // Create a non-ENOENT error
+    const readError = new Error('Permission denied');
+    Object.assign(readError, { code: 'EACCES' });
+    readFileMock.mockRejectedValue(readError);
 
     const consoleErrorMock = vi.spyOn(console, 'error');
 

@@ -130,6 +130,7 @@ describe('DefaultConfiguration', () => {
     const result = await defaultConfiguration.getContent();
 
     expect(result).toEqual({});
+    // Should log error for JSON parse errors (non-ENOENT errors)
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       expect.stringContaining('Failed to parse managed defaults from'),
       expect.anything(),

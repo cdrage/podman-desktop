@@ -57,7 +57,11 @@ export class LockedConfiguration {
       managedLockedData = JSON.parse(managedLockedContent);
       console.log(`[Managed-by]: Loaded managed locked from: ${managedLockedFile}`);
     } catch (error) {
-      console.error(`[Managed-by]: Failed to parse managed locked from ${managedLockedFile}:`, error);
+      // Silently skip if file doesn't exist (ENOENT), only log actual errors
+      const isFileNotFound = error instanceof Error && 'code' in error && error.code === 'ENOENT';
+      if (!isFileNotFound) {
+        console.error(`[Managed-by]: Failed to parse managed locked from ${managedLockedFile}:`, error);
+      }
     }
 
     return managedLockedData;
