@@ -248,7 +248,20 @@ export class ConfigurationRegistry implements IConfigurationRegistry {
   }
 
   getConfigurationProperties(): Record<string, IConfigurationPropertyRecordedSchema> {
-    return this.configurationProperties;
+    // Check which keys are locked and mark them
+    const lockedConfig = this.configurationValues.get(CONFIGURATION_SYSTEM_MANAGED_LOCKED_SCOPE);
+    const lockedKeys = (lockedConfig?.['locked'] as string[]) || [];
+
+    // Create a copy with locked status
+    const propertiesWithLockStatus: Record<string, IConfigurationPropertyRecordedSchema> = {};
+    for (const key in this.configurationProperties) {
+      propertiesWithLockStatus[key] = {
+        ...this.configurationProperties[key],
+        locked: lockedKeys.includes(key),
+      };
+    }
+
+    return propertiesWithLockStatus;
   }
 
   async updateConfigurationValue(

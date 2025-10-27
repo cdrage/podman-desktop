@@ -1,6 +1,6 @@
 <script lang="ts">
-import { faArrowUpRightFromSquare, faFlask } from '@fortawesome/free-solid-svg-icons';
-import { Button } from '@podman-desktop/ui-svelte';
+import { faArrowUpRightFromSquare, faFlask, faLock } from '@fortawesome/free-solid-svg-icons';
+import { Button, Tooltip } from '@podman-desktop/ui-svelte';
 import Fa from 'svelte-fa';
 
 import { getInitialValue } from '/@/lib/preferences/Util';
@@ -92,6 +92,16 @@ async function openGitHubDiscussion(): Promise<void> {
       <div class="flex flex-row text-[color:var(--pd-invert-content-card-text)]">
         <div class="flex flex-row space-x-2 items-center">
           <span class="font-semibold">{recordUI.title}</span>
+          {#if record.locked}
+            <Tooltip tip="This setting is locked by your system administrator and cannot be changed." right>
+              <Label>
+                <div class="flex flex-row space-x-1 items-center">
+                  <Fa title="locked" size="xs" icon={faLock}/>
+                  <span>Locked</span>
+                </div>
+              </Label>
+            </Tooltip>
+          {/if}
           {#if record.experimental !== undefined}
             <Label>
               <div class="flex flex-row space-x-1 items-center">
@@ -120,6 +130,7 @@ async function openGitHubDiscussion(): Promise<void> {
           updateResetButtonVisibility={updateResetButtonVisibility}
           resetToDefault={resetToDefault}
           enableAutoSave={true}
+          disabled={record.locked}
           initialValue={getInitialValue(recordUI.original)} />
       {/if}
     </div>
@@ -129,6 +140,7 @@ async function openGitHubDiscussion(): Promise<void> {
         updateResetButtonVisibility={updateResetButtonVisibility}
         resetToDefault={resetToDefault}
         enableAutoSave={true}
+        disabled={record.locked}
         initialValue={getInitialValue(recordUI.original)} />
     {/if}
   </div>

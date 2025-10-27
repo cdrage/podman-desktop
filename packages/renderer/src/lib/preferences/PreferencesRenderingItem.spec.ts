@@ -96,3 +96,29 @@ test('props title full should use full record id', async () => {
     expect(element).toHaveClass('font-semibold');
   });
 });
+
+test('locked record should display locked label', async () => {
+  const lockedRecord: IConfigurationPropertyRecordedSchema = {
+    id: 'proxy.http',
+    title: 'Proxy',
+    parentId: 'proxy',
+    description: 'HTTP proxy configuration',
+    type: 'string',
+    locked: true,
+  };
+
+  const { getByText, queryAllByRole } = render(PreferencesRenderingItem, {
+    record: lockedRecord,
+  });
+
+  await vi.waitFor(() => {
+    // Check for "Locked" label text
+    const label = getByText('Locked');
+    expect(label).toBeDefined();
+
+    // Check for lock icon
+    const elements = queryAllByRole('img', { hidden: true });
+    expect(elements.length).toBeGreaterThan(0);
+    expect(elements.find(element => element.textContent === 'locked')).toBeDefined();
+  });
+});

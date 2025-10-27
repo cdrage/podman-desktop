@@ -7,6 +7,7 @@ import type { IConfigurationPropertyRecordedSchema } from '/@api/configuration/m
 export let record: IConfigurationPropertyRecordedSchema;
 export let value: string = '';
 export let onChange = async (_id: string, _value: string): Promise<void> => {};
+export let disabled = false;
 
 let invalidEntry = false;
 let dialogOptions: OpenDialogOptions = {
@@ -29,7 +30,8 @@ function onChangeFileInput(value: string): void {
     name={record.id}
     bind:value={value}
     onChange={onChangeFileInput}
-    readonly={record.readonly ?? false}
+    readonly={(record.readonly ?? false) || disabled}
+    disabled={disabled}
     clearable={true}
     placeholder={record.placeholder}
     options={dialogOptions}

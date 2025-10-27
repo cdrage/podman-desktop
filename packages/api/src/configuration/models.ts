@@ -52,6 +52,8 @@ export interface IConfigurationPropertyRecordedSchema extends IConfigurationProp
   title: string;
   parentId: string;
   extension?: IConfigurationExtensionInfo;
+  // indicates if this configuration value is locked by system management
+  locked?: boolean;
 }
 
 export interface IConfigurationPropertySchema {
