@@ -68,6 +68,8 @@ import TabItem from '@theme/TabItem';
 | `proxy.no`                                    | string  | `""`               | No-proxy pattern (comma-separated)                                                                        |
 | `recommendations.ignoreBannerRecommendations` | boolean | `false`            | Disable recommendation banners                                                                            |
 | `recommendations.ignoreRecommendations`       | boolean | `false`            | Disable extension recommendations                                                                         |
+| `registries.defaults`                         | array   | `[]`               | Default container registries with prefixes, locations, and security settings                              |
+| `registries.mirrors`                          | array   | `[]`               | Registry mirror configurations for improved performance                                                   |
 | `statusbarProviders.showProviders`            | object  | `null`             | **EXPERIMENTAL:** Show providers in status bar. Example: `{"remindAt": 1758312136049, "disabled": false}` |
 | `tasks.manager`                               | object  | `null`             | **EXPERIMENTAL:** New task manager widget. Example: `{}`                                                  |
 | `tasks.statusBar`                             | object  | `null`             | **EXPERIMENTAL:** Show tasks in status bar. Example: `{}`                                                 |
@@ -116,6 +118,16 @@ These settings are automatically managed by Podman Desktop and should not typica
   "extensions.autoUpdate": true,
   "userConfirmation.bulk": true,
   "proxy.http": "https://127.0.0.1:8081",
+  "registries.defaults": [
+    {
+      "registry": {
+        "prefix": "docker.io",
+        "location": "registry.corp.example.com",
+        "insecure": false,
+        "blocked": false
+      }
+    }
+  ],
   "statusbarProviders.showProviders": {
     "remindAt": 1758312136049,
     "disabled": false

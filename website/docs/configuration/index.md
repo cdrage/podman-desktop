@@ -11,6 +11,7 @@ keywords: [podman desktop, configuration, settings, preferences, managed]
 You can configure Podman Desktop settings:
 
 - [Settings reference](/docs/configuration/settings-reference)
+- [Configuring default registries](/docs/configuration/default-registries)
 - [Managed configuration](/docs/configuration/managed-configuration)
 
 #### Next steps
