@@ -533,6 +533,139 @@ describe('Managed Locked', () => {
     expect(managedConfig).toEqual({});
   });
 
+  test('should copy default-settings.json values to settings.json on init when key does not exist', async () => {
+    const readFileMock = vi.mocked(fs.promises.readFile);
+    const writeFileMock = vi.mocked(fs.promises.writeFile);
+
+    // User settings has some values
+    const userSettings = {
+      'user.existing': 'userValue',
+    };
+
+    // Managed defaults has recommended values
+    const managedDefaults = {
+      'telemetry.disabled': true,
+      'proxy.http': 'https://corporate-proxy.com:3128',
+    };
+
+    readFileMock.mockResolvedValue(JSON.stringify(userSettings));
+    getContentMock.mockResolvedValue(managedDefaults);
+    getLockedContentMock.mockResolvedValue({});
+
+    const testRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration);
+    await testRegistry.init();
+
+    // settings.json should be updated with merged values
+    expect(writeFileMock).toHaveBeenCalledWith(
+      expect.stringContaining('settings.json'),
+      JSON.stringify(
+        {
+          'user.existing': 'userValue',
+          'telemetry.disabled': true,
+          'proxy.http': 'https://corporate-proxy.com:3128',
+        },
+        undefined,
+        2,
+      ),
+    );
+  });
+
+  test('should not overwrite user settings.json values with default-settings.json values', async () => {
+    const readFileMock = vi.mocked(fs.promises.readFile);
+    const writeFileMock = vi.mocked(fs.promises.writeFile);
+
+    // User has explicitly set telemetry.disabled to false
+    const userSettings = {
+      'telemetry.disabled': false,
+    };
+
+    // Managed defaults recommends true
+    const managedDefaults = {
+      'telemetry.disabled': true,
+    };
+
+    readFileMock.mockResolvedValue(JSON.stringify(userSettings));
+    getContentMock.mockResolvedValue(managedDefaults);
+    getLockedContentMock.mockResolvedValue({});
+
+    const testRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration);
+    await testRegistry.init();
+
+    // settings.json should NOT be written since no new values were added
+    expect(writeFileMock).not.toHaveBeenCalledWith(expect.stringContaining('settings.json'), expect.anything());
+
+    // Verify user's value is preserved in memory
+    const configurationValues = (
+      testRegistry as unknown as { configurationValues: Map<string, { [key: string]: unknown }> }
+    ).configurationValues;
+    const defaultConfig = configurationValues.get('DEFAULT');
+
+    expect(defaultConfig?.['telemetry.disabled']).toBe(false);
+  });
+
+  test('should not write settings.json when no defaults need to be copied', async () => {
+    const readFileMock = vi.mocked(fs.promises.readFile);
+    const writeFileMock = vi.mocked(fs.promises.writeFile);
+
+    // User settings already contains all the managed defaults keys
+    const userSettings = {
+      'telemetry.disabled': false,
+      'proxy.http': 'https://user-proxy.com:8080',
+    };
+
+    const managedDefaults = {
+      'telemetry.disabled': true,
+      'proxy.http': 'https://corporate-proxy.com:3128',
+    };
+
+    readFileMock.mockResolvedValue(JSON.stringify(userSettings));
+    getContentMock.mockResolvedValue(managedDefaults);
+    getLockedContentMock.mockResolvedValue({});
+
+    const testRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration);
+    await testRegistry.init();
+
+    // settings.json should NOT be written since user already has all keys
+    expect(writeFileMock).not.toHaveBeenCalledWith(expect.stringContaining('settings.json'), expect.anything());
+  });
+
+  test('should handle complex object values when copying defaults', async () => {
+    const readFileMock = vi.mocked(fs.promises.readFile);
+    const writeFileMock = vi.mocked(fs.promises.writeFile);
+
+    const userSettings = {};
+
+    const managedDefaults = {
+      'docker.settings': {
+        cpus: 2,
+        memory: 4096,
+        disk: 50,
+      },
+    };
+
+    readFileMock.mockResolvedValue(JSON.stringify(userSettings));
+    getContentMock.mockResolvedValue(managedDefaults);
+    getLockedContentMock.mockResolvedValue({});
+
+    const testRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration);
+    await testRegistry.init();
+
+    expect(writeFileMock).toHaveBeenCalledWith(
+      expect.stringContaining('settings.json'),
+      JSON.stringify(
+        {
+          'docker.settings': {
+            cpus: 2,
+            memory: 4096,
+            disk: 50,
+          },
+        },
+        undefined,
+        2,
+      ),
+    );
+  });
+
   test('should mark configuration properties as locked when they appear in locked.json', async () => {
     // We'll use foo.enabled and security.setting as locked properties for this test
     const managedLocked = { locked: ['foo.enabled', 'security.setting'] };

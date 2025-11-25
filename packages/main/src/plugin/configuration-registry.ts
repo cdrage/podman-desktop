@@ -135,8 +135,6 @@ export class ConfigurationRegistry implements IConfigurationRegistry {
       });
       configData = {};
     }
-    this.configurationValues.set(CONFIGURATION_DEFAULT_SCOPE, configData);
-
     // Load managed defaults
     const defaults = await this.defaultConfiguration.getContent();
     this.configurationValues.set(CONFIGURATION_SYSTEM_MANAGED_DEFAULTS_SCOPE, defaults);
@@ -144,6 +142,25 @@ export class ConfigurationRegistry implements IConfigurationRegistry {
     // Load managed locked
     const locked = await this.lockedConfiguration.getContent();
     this.configurationValues.set(CONFIGURATION_SYSTEM_MANAGED_LOCKED_SCOPE, locked);
+
+    // Copy default-settings.json values into settings.json for keys that don't exist in user settings
+    // This ensures the GUI shows the recommended defaults and users can modify them
+    let settingsModified = false;
+    for (const key of Object.keys(defaults)) {
+      if (configData[key] === undefined) {
+        configData[key] = defaults[key];
+        settingsModified = true;
+        console.log(`[Managed-by]: Applied default setting for '${key}' from default-settings.json`);
+      }
+    }
+
+    this.configurationValues.set(CONFIGURATION_DEFAULT_SCOPE, configData);
+
+    // Save the updated settings.json if we added any defaults
+    if (settingsModified) {
+      await fsPromises.writeFile(settingsFile, JSON.stringify(configData, undefined, 2));
+      console.log(`[Managed-by]: Updated settings.json with default values from default-settings.json`);
+    }
 
     return notifications;
   }
