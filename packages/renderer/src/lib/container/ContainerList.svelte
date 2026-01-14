@@ -389,7 +389,7 @@ function label(item: ContainerGroupInfoUI | ContainerInfoUI): string {
     {#if $containersInfos.length > 0}
       <Prune type="containers" engines={enginesList} />
     {/if}
-    <Button on:click={toggleCreateContainer} icon={faPlusCircle} title="Create a container">Create</Button>
+    <Button on:click={toggleCreateContainer} icon={faPlusCircle} title="Create a container" aria-label="Create Container">Create</Button>
   {/snippet}
   {#snippet bottomAdditionalActions()}
     {#if selectedItemsNumber && selectedItemsNumber > 0}

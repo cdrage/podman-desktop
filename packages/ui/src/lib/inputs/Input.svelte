@@ -110,7 +110,7 @@ async function onClear(): Promise<void> {
       aria-invalid={ariaInvalid}
       bind:value />
     {#if error && showError}
-      <span class="px-0.5 text-[color:var(--pd-input-field-error-text)]" aria-label="error">
+      <span class="px-0.5 text-[color:var(--pd-input-field-error-text)]" aria-label="Input error indicator">
         <Icon icon={faCircleExclamation}/>
       </span>
     {/if}
@@ -118,7 +118,7 @@ async function onClear(): Promise<void> {
       <button
         class="px-0.5 cursor-pointer text-[color:var(--pd-input-field-icon)] group-hover:text-[color:var(--pd-input-field-hover-icon)] group-focus-within:text-[color:var(--pd-input-field-focused-icon)]"
         class:hidden={!value || disabled}
-        aria-label="clear"
+        aria-label="Clear input field"
         onclick={onClear}
         type="button">
         <Icon icon={faXmark} />

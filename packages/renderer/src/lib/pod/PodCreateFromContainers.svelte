@@ -272,6 +272,7 @@ function navigateToContainers(): void {
               <div class="p-2 flex flex-row align-items text-sm text-[var(--pd-content-card-text)]">
                 <Checkbox
                   class="pt-0.5 mr-5"
+                  title="Expose port {port} from {value.container}"
                   bind:checked={value.exposed}
                   on:click={(event): void => updatePortExposure(port, event.detail)} />
                 <div class="w-28 mr-5">Port {port.toString()}</div>

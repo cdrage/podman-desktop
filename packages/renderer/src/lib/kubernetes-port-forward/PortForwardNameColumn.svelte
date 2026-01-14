@@ -36,7 +36,7 @@ async function openResourceDetails(): Promise<void> {
 }
 </script>
 
-<button title="Open pod details" class="hover:cursor-pointer flex flex-col max-w-full" disabled={object.kind !== WorkloadKind.POD} onclick={openResourceDetails}>
+<button title="Open pod details" aria-label="View {object.kind} {object.name} details" class="hover:cursor-pointer flex flex-col max-w-full" disabled={object.kind !== WorkloadKind.POD} onclick={openResourceDetails}>
   <div class="text-[var(--pd-table-body-text-highlight)] max-w-full overflow-hidden text-ellipsis">
     {object.name}
   </div>

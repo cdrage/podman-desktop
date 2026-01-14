@@ -46,7 +46,7 @@ async function onShowHide(event: MouseEvent): Promise<void> {
     <button
       class="px-1 cursor-pointer text-[var(--pd-input-field-stroke)] group-hover:text-[var(--pd-input-field-hover-stroke)] group-focus-within:text-[var(--pd-input-field-hover-stroke)]"
       class:hidden={!password || readonly}
-      aria-label="show/hide"
+      aria-label="Toggle password visibility"
       onclick={onShowHide}
       >{#if passwordHidden}
         <Fa icon={faEye} />

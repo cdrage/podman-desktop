@@ -25,6 +25,7 @@ async function deleteConfigMapSecret(): Promise<void> {
 
 <ListItemButtonIcon
   title={`Delete ${configmapSecretUtils.isSecret(configMapSecret) ? 'Secret' : 'ConfigMap'}`}
+  ariaLabel={`Delete ${configmapSecretUtils.isSecret(configMapSecret) ? 'Secret' : 'ConfigMap'} ${configMapSecret.name}`}
   onClick={(): void =>
     withConfirmation(
       deleteConfigMapSecret,

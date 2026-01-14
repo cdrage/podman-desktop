@@ -22,6 +22,7 @@ async function deleteDeployment(): Promise<void> {
 
 <ListItemButtonIcon
   title="Delete Deployment"
+  ariaLabel="Delete Deployment {deployment.name}"
   onClick={(): void => withConfirmation(deleteDeployment, `delete deployment ${deployment.name}`)}
   detailed={detailed}
   icon={faTrash} />

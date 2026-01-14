@@ -160,6 +160,7 @@ function getLoggerHandler(provider: ProviderInfo, containerConnectionInfo: Provi
             <LoadingIconButton
               clickAction={(): Promise<void> => startConnectionProvider(provider, connection)}
               action="start"
+              ariaLabel="Start {connection.name}"
               icon={faPlay}
               state={connectionStatus} />
           </div>
@@ -168,6 +169,7 @@ function getLoggerHandler(provider: ProviderInfo, containerConnectionInfo: Provi
           <LoadingIconButton
             clickAction={(): Promise<void> => restartConnectionProvider(provider, connection)}
             action="restart"
+            ariaLabel="Restart {connection.name}"
             icon={faRotateRight}
             state={connectionStatus}
             />
@@ -176,6 +178,7 @@ function getLoggerHandler(provider: ProviderInfo, containerConnectionInfo: Provi
           <LoadingIconButton
             clickAction={(): Promise<void> => stopConnectionProvider(provider, connection)}
             action="stop"
+            ariaLabel="Stop {connection.name}"
             icon={faStop}
             state={connectionStatus}
             />
@@ -184,6 +187,7 @@ function getLoggerHandler(provider: ProviderInfo, containerConnectionInfo: Provi
           <LoadingIconButton
             clickAction={(): Promise<void> => editConnectionProvider(provider, connection)}
             action="edit"
+            ariaLabel="Edit {connection.name}"
             icon={faEdit}
             state={connectionStatus}
             />
@@ -192,6 +196,7 @@ function getLoggerHandler(provider: ProviderInfo, containerConnectionInfo: Provi
           <LoadingIconButton
             clickAction={(): Promise<void> => deleteConnectionProvider(provider, connection)}
             action="delete"
+            ariaLabel="Delete {connection.name}"
             icon={faTrash}
             state={connectionStatus}
             />

@@ -129,6 +129,7 @@ if (dropdownMenu) {
 
 <ListItemButtonIcon
   title="Start Compose"
+  ariaLabel="Start Compose {compose.name}"
   onClick={startCompose}
   hidden={
     !compose.actionInProgress
@@ -142,6 +143,7 @@ if (dropdownMenu) {
 
 <ListItemButtonIcon
   title="Stop Compose"
+  ariaLabel="Stop Compose {compose.name}"
   onClick={stopCompose}
   hidden={
     !compose.actionInProgress
@@ -155,16 +157,18 @@ if (dropdownMenu) {
 
 <ListItemButtonIcon
   title="Delete Compose"
+  ariaLabel="Delete Compose {compose.name}"
   onClick={(): void => withConfirmation(deleteCompose, `delete compose ${compose.name}`)}
   icon={faTrash}
   detailed={detailed}
   inProgress={compose.actionInProgress && compose.status === 'DELETING'} />
 
 <!-- If dropdownMenu is true, use it, otherwise just show the regular buttons -->
-<svelte:component this={actionsStyle}>
+<svelte:component this={actionsStyle} title="More actions for compose {compose.name}">
   {#if !detailed}
     <ListItemButtonIcon
       title="Generate Kube"
+      ariaLabel="Generate Kube {compose.name}"
       onClick={openGenerateKube}
       menu={dropdownMenu}
       detailed={detailed}
@@ -172,6 +176,7 @@ if (dropdownMenu) {
   {/if}
   <ListItemButtonIcon
     title="Deploy to Kubernetes"
+    ariaLabel="Deploy to Kubernetes {compose.name}"
     onClick={deployToKubernetes}
     menu={dropdownMenu}
     hidden={compose.engineType !== 'podman'}
@@ -179,6 +184,7 @@ if (dropdownMenu) {
     icon={faRocket} />
   <ListItemButtonIcon
     title="Restart Compose"
+    ariaLabel="Restart Compose {compose.name}"
     onClick={restartCompose}
     menu={dropdownMenu}
     detailed={detailed}

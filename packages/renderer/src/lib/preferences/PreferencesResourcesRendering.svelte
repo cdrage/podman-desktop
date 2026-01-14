@@ -581,6 +581,7 @@ $effect(() => {
                     <Tooltip bottom tip="More Options">
                       <ActionsMenu
                         dropdownMenu={true}
+                        title="Actions for {container.name}"
                         onBeforeToggle={(): void => {
                           globalContext?.setValue('selectedProviderConnectionType', container.type);
                           globalContext?.setValue('selectedProviderConnectionStatus', container.status);
@@ -678,7 +679,7 @@ $effect(() => {
               {#snippet advanced_actions()}
                 <span  class:hidden={providers.length === 0}>
                   <Tooltip bottom tip="More Options">
-                    <ActionsMenu dropdownMenu={true}>
+                    <ActionsMenu dropdownMenu={true} title="Actions for {vmConnection.name}">
                       <DropdownMenu.Item title="Open Terminal" icon={faTerminal} onClick={(): void => router.goto(
                         `/preferences/vm-connection/${provider.internalId}/${vmConnection.name}/terminal`,
                       )}/>

@@ -100,10 +100,11 @@ function saveImage(): void {
 }
 </script>
 
-<ListItemButtonIcon title="Run Image" onClick={(): Promise<void> => runImage(image)} detailed={detailed} icon={faPlay} />
+<ListItemButtonIcon title="Run Image" ariaLabel="Run Image {image.name}" onClick={(): Promise<void> => runImage(image)} detailed={detailed} icon={faPlay} />
 
 <ListItemButtonIcon
   title="Delete Image"
+  ariaLabel="Delete Image {image.name}"
   onClick={(): void => withConfirmation(deleteImage, `delete image ${image.name}:${image.tag}`)}
   detailed={detailed}
   icon={faTrash}
@@ -112,11 +113,13 @@ function saveImage(): void {
 <!-- If dropdownMenu is true, use it, otherwise just show the regular buttons -->
 <ActionsWrapper
   dropdownMenu={dropdownMenu}
+  title="More actions for image {image.name}"
   onBeforeToggle={(): void => {
     globalContext?.setValue('selectedImageId', image.id);
   }}>
   <ListItemButtonIcon
     title="Push Image"
+    ariaLabel="Push Image {image.name}"
     onClick={(): Promise<void> => pushImage(image)}
     menu={dropdownMenu}
     detailed={detailed}
@@ -124,6 +127,7 @@ function saveImage(): void {
 
   <ListItemButtonIcon
     title="Edit Image"
+    ariaLabel="Edit Image {image.name}"
     onClick={(): Promise<void> => renameImage(image)}
     menu={dropdownMenu}
     detailed={detailed}
@@ -132,6 +136,7 @@ function saveImage(): void {
   {#if !detailed}
     <ListItemButtonIcon
       title="Show History"
+      ariaLabel="Show History {image.name}"
       onClick={showLayersImage}
       menu={dropdownMenu}
       detailed={detailed}
@@ -139,13 +144,14 @@ function saveImage(): void {
   {/if}
   <ListItemButtonIcon
     title="Save Image"
+    ariaLabel="Save Image {image.name}"
     tooltip="Save image to a local directory"
     onClick={saveImage}
     menu={dropdownMenu}
     detailed={detailed}
     icon={faDownload} />
 
-  <ActionsWrapper dropdownMenu={groupingContributions} dropdownMenuAsMenuActionItem={groupingContributions}>
+  <ActionsWrapper dropdownMenu={groupingContributions} dropdownMenuAsMenuActionItem={groupingContributions} title="Extension actions for image {image.name}">
     <ContributionActions
       args={[image]}
       dropdownMenu={groupingContributions ? true : dropdownMenu}

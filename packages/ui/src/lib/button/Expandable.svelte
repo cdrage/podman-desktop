@@ -11,6 +11,7 @@ interface Props {
   title?: Snippet;
   children?: Snippet;
   onclick?: (expanded: boolean) => void;
+  ariaLabel?: string;
 }
 let {
   expanded = $bindable(true),
@@ -18,6 +19,7 @@ let {
   title = undefined,
   children = undefined,
   onclick,
+  ariaLabel = 'section',
 }: Props = $props();
 
 function toggle(): void {
@@ -27,7 +29,7 @@ function toggle(): void {
 </script>
 
 <div class="flex flex-col w-full gap-2">
-  <button onclick={(): void => toggle()} aria-expanded="{expanded}">
+  <button onclick={(): void => toggle()} aria-expanded="{expanded}" aria-label="{expanded ? 'Collapse' : 'Expand'} {ariaLabel}">
     <div class="flex flex-row space-x-1 items-center">
       {#if expanded}
         <Icon icon={faChevronDown} class='w-4'/>

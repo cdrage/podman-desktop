@@ -458,6 +458,7 @@ async function resetColumns(): Promise<void> {
             {#if children.length > 0}
               <button
                 title={collapsed.includes(itemKey) ? 'Expand Row' : 'Collapse Row'}
+                aria-label="{collapsed.includes(itemKey) ? 'Expand' : 'Collapse'} {label(object)}"
                 aria-expanded={!collapsed.includes(itemKey)}
                 on:click={toggleChildren.bind(undefined, itemKey)}
               >
@@ -470,7 +471,7 @@ async function resetColumns(): Promise<void> {
           {#if row.info.selectable}
             <div class="whitespace-nowrap place-self-center" role="cell">
               <Checkbox
-                title="Toggle {kind}"
+                title="Select {label(object)}"
                 bind:checked={object.selected}
                 disabled={!row.info.selectable(object)}
                 disabledTooltip={row.info.disabledText}
@@ -509,7 +510,7 @@ async function resetColumns(): Promise<void> {
               {#if row.info.selectable}
                 <div class="whitespace-nowrap place-self-center" role="cell">
                   <Checkbox
-                    title="Toggle {kind}"
+                    title="Select {label(child)}"
                     bind:checked={child.selected}
                     disabled={!row.info.selectable(child)}
                     disabledTooltip={row.info.disabledText} />

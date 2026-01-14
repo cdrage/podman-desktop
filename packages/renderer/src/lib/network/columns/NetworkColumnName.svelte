@@ -11,6 +11,7 @@ let { object }: Props = $props();
 
 <button
   class="hover:cursor-pointer flex text-[var(--pd-table-body-text-highlight)] max-w-full overflow-hidden text-ellipsis"
+  aria-label="View network {object.name} details"
   onclick={(): void => openDetailsNetwork(object)}>
   {object.name}
 </button>

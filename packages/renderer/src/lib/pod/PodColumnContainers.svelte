@@ -12,6 +12,6 @@ function openContainersFromPod(pod: PodInfoUI): void {
 }
 </script>
 
-<button class:cursor-pointer={object.containers.length > 0} on:click={(): void => openContainersFromPod(object)}>
+<button class:cursor-pointer={object.containers.length > 0} aria-label="View {object.containers.length} containers in pod {object.name}" on:click={(): void => openContainersFromPod(object)}>
   <Dots containers={object.containers} />
 </button>

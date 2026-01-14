@@ -205,6 +205,7 @@ import { RecommendationsRegistry } from './recommendations/recommendations-regis
 import { RegistryInit } from './registry-init.js';
 import { ReleaseNotesBannerInit } from './release-notes-banner-init.js';
 import { SafeStorageRegistry } from './safe-storage/safe-storage-registry.js';
+import { SelkieModeInit } from './selkie-mode/selkie-mode-init.js';
 import { PinRegistry } from './statusbar/pin-registry.js';
 import { StatusbarProvidersInit } from './statusbar/statusbar-providers-init.js';
 import { StatusBarRegistry } from './statusbar/statusbar-registry.js';
@@ -661,6 +662,11 @@ export class PluginSystem {
     container.bind<AppearanceInit>(AppearanceInit).toSelf().inSingletonScope();
     const appearanceConfiguration = container.get<AppearanceInit>(AppearanceInit);
     appearanceConfiguration.init();
+
+    // register Selkie Mode configuration
+    container.bind<SelkieModeInit>(SelkieModeInit).toSelf().inSingletonScope();
+    const selkieModeInit = container.get<SelkieModeInit>(SelkieModeInit);
+    selkieModeInit.init();
 
     container.bind<ConfirmationInit>(ConfirmationInit).toSelf().inSingletonScope();
     const confirmationConfiguration = container.get<ConfirmationInit>(ConfirmationInit);

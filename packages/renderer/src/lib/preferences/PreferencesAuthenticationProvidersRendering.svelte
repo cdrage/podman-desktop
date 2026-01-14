@@ -120,7 +120,7 @@ import SettingsPage from './SettingsPage.svelte';
               <!-- Authentication Provider Auth Request Sign In button end -->
             {:else if sessionRequests.length > 1}
               <!-- Authentication Provider Auth Requests DropDown start -->
-              <DropdownMenu>
+              <DropdownMenu title="Sign in options for {provider.displayName}">
                 {#each sessionRequests as request (request.id)}
                   <DropdownMenu.Item
                     title="Sign in to use {request.extensionLabel}"

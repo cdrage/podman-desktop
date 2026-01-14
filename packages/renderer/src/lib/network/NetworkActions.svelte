@@ -35,6 +35,7 @@ function closeUpdateDialog(): void {
 
 <ListItemButtonIcon
   title="Update Network"
+  ariaLabel="Update Network {object.name}"
   onClick={(): void => {showUpdateNetworkDialog = true;}}
   icon={faEdit}
   detailed={detailed}
@@ -42,6 +43,7 @@ function closeUpdateDialog(): void {
 
 <ListItemButtonIcon
   title="Delete Network"
+  ariaLabel="Delete Network {object.name}"
   onClick={(): void => withConfirmation(removeNetwork, `delete network ${object.name}`)}
   icon={faTrash}
   detailed={detailed}

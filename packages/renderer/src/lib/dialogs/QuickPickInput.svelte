@@ -368,7 +368,7 @@ async function handleKeydown(e: KeyboardEvent): Promise<void> {
                   ? 'bg-[var(--pd-modal-dropdown-highlight)] selected'
                   : 'hover:bg-[var(--pd-dropdown-bg)]'}">
               {#if quickPickCanPickMany}
-                <Checkbox class="mx-1 my-auto" bind:checked={item.checkbox} />
+                <Checkbox class="mx-1 my-auto" title="Select {item.value}" bind:checked={item.checkbox} />
               {/if}
               <button
                 title="Select {item.value}"

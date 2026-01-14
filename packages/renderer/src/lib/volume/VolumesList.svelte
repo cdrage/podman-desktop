@@ -202,7 +202,7 @@ function label(obj: VolumeInfoUI): string {
         aria-label="Gather volume sizes">Gather volume sizes</Button>
     {/if}
     {#if providerConnections.length > 0}
-      <Button on:click={gotoCreateVolume} icon={faPlusCircle} title="Create a volume" aria-label="Create"
+      <Button on:click={gotoCreateVolume} icon={faPlusCircle} title="Create a volume" aria-label="Create Volume"
         >Create</Button>
     {/if}
   {/snippet}

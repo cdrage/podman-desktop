@@ -26,6 +26,7 @@ async function deleteIngressRoute(): Promise<void> {
 
 <ListItemButtonIcon
   title={`Delete ${ingressRouteUtils.isIngress(ingressRoute) ? 'Ingress' : 'Route'}`}
+  ariaLabel={`Delete ${ingressRouteUtils.isIngress(ingressRoute) ? 'Ingress' : 'Route'} ${ingressRoute.name}`}
   onClick={(): void =>
     withConfirmation(
       deleteIngressRoute,

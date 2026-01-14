@@ -3,6 +3,7 @@ import { onMount } from 'svelte';
 
 import CommandPalette from '/@/lib/dialogs/CommandPalette.svelte';
 import DesktopIcon from '/@/lib/images/DesktopIcon.svelte';
+import SelkieMode from '/@/lib/selkie-mode/SelkieMode.svelte';
 import NavigationButtons from '/@/lib/ui/NavigationButtons.svelte';
 import WindowControlButtons from '/@/lib/window-control-buttons/ControlButtons.svelte';
 
@@ -12,6 +13,7 @@ let platform: string = $state('');
 
 const title = 'Podman Desktop';
 let commandPaletteVisible = $state(false);
+let selkieModeVisible = $state(false);
 
 onMount(async () => {
   platform = await window.getOsPlatform();
@@ -23,6 +25,10 @@ function openCommandPalette(): void {
 
 function closeCommandPalette(): void {
   commandPaletteVisible = false;
+}
+
+function closeSelkieMode(): void {
+  selkieModeVisible = false;
 }
 </script>
 
@@ -59,3 +65,4 @@ function closeCommandPalette(): void {
 </header>
 
 <CommandPalette display={commandPaletteVisible} onclose={closeCommandPalette}/>
+<SelkieMode display={selkieModeVisible} onclose={closeSelkieMode}/>

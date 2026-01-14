@@ -44,15 +44,17 @@ async function onError(error: string): Promise<void> {
 
 <ListItemButtonIcon
   title="Delete Manifest"
+  ariaLabel="Delete Manifest {manifest.name}"
   onClick={(): void => withConfirmation(deleteManifest, `delete manifest ${manifest.name}`)}
   detailed={detailed}
   icon={faTrash}
   enabled={manifest.status === 'UNUSED'} />
 
 <!-- If dropdownMenu is true, use it, otherwise just show the regular buttons -->
-<ActionsWrapper dropdownMenu={dropdownMenu}>
+<ActionsWrapper dropdownMenu={dropdownMenu} title="More actions for manifest {manifest.name}">
   <ListItemButtonIcon
     title="Push Manifest"
+    ariaLabel="Push Manifest {manifest.name}"
     onClick={pushManifest}
     menu={dropdownMenu}
     detailed={detailed}

@@ -58,14 +58,16 @@ if (dropdownMenu) {
 
 <ListItemButtonIcon
   title="Delete Pod"
+  ariaLabel="Delete Pod {pod.name}"
   onClick={():void => withConfirmation(deletePod, `delete pod ${pod.name}`)}
   icon={faTrash}
   detailed={detailed}/>
 
 <!-- If dropdownMenu is true, use it, otherwise just show the regular buttons -->
-<svelte:component this={actionsStyle}>
+<svelte:component this={actionsStyle} title="More actions for Kubernetes pod {pod.name}">
   <ListItemButtonIcon
     title="Restart Pod"
+    ariaLabel="Restart Pod {pod.name}"
     onClick={restartPod}
     menu={dropdownMenu}
     detailed={detailed}
@@ -73,6 +75,7 @@ if (dropdownMenu) {
     {#if openingKubernetesUrls.size === 0}
       <ListItemButtonIcon
         title="Open Browser"
+        ariaLabel="Open Browser for Kubernetes pod {pod.name}"
         menu={dropdownMenu}
         enabled={false}
         hidden={dropdownMenu}
@@ -81,6 +84,7 @@ if (dropdownMenu) {
     {:else if openingKubernetesUrls.size === 1}
       <ListItemButtonIcon
         title="Open {[...openingKubernetesUrls][0][0]}"
+        ariaLabel="Open route {[...openingKubernetesUrls][0][0]} for Kubernetes pod {pod.name}"
         onClick={(): Promise<void> => window.openExternal([...openingKubernetesUrls][0][1])}
         menu={dropdownMenu}
         enabled={pod.status === 'RUNNING'}
@@ -89,13 +93,14 @@ if (dropdownMenu) {
         icon={faExternalLinkSquareAlt} />
     {:else if openingKubernetesUrls.size > 1}
       <DropdownMenu
-        title="Open Kubernetes Routes"
+        title="Open Kubernetes routes for pod {pod.name}"
         icon={faExternalLinkSquareAlt}
         hidden={dropdownMenu}
         shownAsMenuActionItem={true}>
         {#each Array.from(openingKubernetesUrls) as [routeName, routeHost] (routeName)}
           <ListItemButtonIcon
             title="Open {routeName}"
+            ariaLabel="Open route {routeName} for Kubernetes pod {pod.name}"
             onClick={(): Promise<void>  => window.openExternal(routeHost)}
             menu={!dropdownMenu}
             enabled={pod.status === 'RUNNING'}

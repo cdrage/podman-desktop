@@ -22,7 +22,7 @@ const disabledClasses = 'text-[var(--pd-dropdown-disabled-item-text)] bg-[var(--
 
 {#if !hidden}
   <!-- Use a div + onclick so there's no "blind spots" for when clicking-->
-  <div class={`p-2.5 ${enabled ? enabledClasses : disabledClasses}`} role="none" onclick={onClick}>
+  <div class={`p-2.5 ${enabled ? enabledClasses : disabledClasses}`} role="menuitem" aria-label={title} aria-disabled={!enabled} onclick={onClick}>
     <span
       title={tooltip !== '' ? tooltip : title}
       class="group flex items-center no-underline whitespace-nowrap h-4"

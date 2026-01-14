@@ -187,6 +187,7 @@ if (dropdownMenu) {
 
 <ListItemButtonIcon
   title="Start Container"
+  ariaLabel="Start Container {container.name}"
   onClick={startContainer}
   hidden={container.state === 'RUNNING' || container.state === 'STOPPING'}
   detailed={detailed}
@@ -195,6 +196,7 @@ if (dropdownMenu) {
 
 <ListItemButtonIcon
   title="Stop Container"
+  ariaLabel="Stop Container {container.name}"
   onClick={stopContainer}
   hidden={!(container.state === 'RUNNING' || container.state === 'STOPPING')}
   detailed={detailed}
@@ -203,22 +205,25 @@ if (dropdownMenu) {
 
 <ListItemButtonIcon
   title="Delete Container"
+  ariaLabel="Delete Container {container.name}"
   onClick={(): void => withConfirmation(deleteContainer, `delete container ${container.name}`)}
   icon={faTrash}
   detailed={detailed}
   inProgress={container.actionInProgress && container.state === 'DELETING'} />
 
 <!-- If dropdownMenu is true, use it, otherwise just show the regular buttons -->
-<svelte:component this={actionsStyle}>
+<svelte:component this={actionsStyle} title="More actions for container {container.name}">
   {#if !detailed}
     <ListItemButtonIcon
       title="Open Logs"
+      ariaLabel="Open Logs {container.name}"
       onClick={openLogs}
       menu={dropdownMenu}
       detailed={false}
       icon={faAlignLeft} />
     <ListItemButtonIcon
       title="Generate Kube"
+      ariaLabel="Generate Kube {container.name}"
       onClick={openGenerateKube}
       menu={dropdownMenu}
       hidden={!(container.engineType === 'podman' && container.groupInfo.type === ContainerGroupInfoTypeUI.STANDALONE)}
@@ -227,6 +232,7 @@ if (dropdownMenu) {
   {/if}
   <ListItemButtonIcon
     title="Deploy to Kubernetes"
+    ariaLabel="Deploy to Kubernetes {container.name}"
     onClick={deployToKubernetes}
     menu={dropdownMenu}
     hidden={!(container.engineType === 'podman' && container.groupInfo.type === ContainerGroupInfoTypeUI.STANDALONE)}
@@ -234,6 +240,7 @@ if (dropdownMenu) {
     icon={faRocket} />
   <ListItemButtonIcon
     title="Open Browser"
+    ariaLabel="Open Browser {container.name}"
     onClick={openBrowser}
     menu={dropdownMenu}
     enabled={container.state === 'RUNNING' && container.hasPublicPort}
@@ -243,6 +250,7 @@ if (dropdownMenu) {
   {#if !detailed}
     <ListItemButtonIcon
       title="Open Terminal"
+      ariaLabel="Open Terminal {container.name}"
       onClick={openTerminalContainer}
       menu={dropdownMenu}
       hidden={container.state !== 'RUNNING'}
@@ -251,12 +259,14 @@ if (dropdownMenu) {
   {/if}
   <ListItemButtonIcon
     title="Restart Container"
+    ariaLabel="Restart Container {container.name}"
     onClick={restartContainer}
     menu={dropdownMenu}
     detailed={detailed}
     icon={faArrowsRotate} />
   <ListItemButtonIcon
     title="Export Container"
+    ariaLabel="Export Container {container.name}"
     tooltip="Exports container's filesystem contents as a tar archive and saves it on the local machine"
     onClick={exportContainer}
     menu={dropdownMenu}

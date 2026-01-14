@@ -317,8 +317,8 @@ function label(item: ImageInfoUI): string {
       aria-label="Import Image">
       Import
     </Button>
-    <Button on:click={gotoPullImage} title="Pull Image From a Registry" icon={faArrowCircleDown}>Pull</Button>
-    <Button on:click={gotoBuildImage} title="Build Image From Containerfile" icon={faCube}>Build</Button>
+    <Button on:click={gotoPullImage} title="Pull Image From a Registry" aria-label="Pull Image" icon={faArrowCircleDown}>Pull</Button>
+    <Button on:click={gotoBuildImage} title="Build Image From Containerfile" aria-label="Build Image" icon={faCube}>Build</Button>
   {/snippet}
 
   {#snippet bottomAdditionalActions()}

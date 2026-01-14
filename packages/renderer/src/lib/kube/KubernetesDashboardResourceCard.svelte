@@ -24,7 +24,7 @@ async function openLink(): Promise<void> {
 }
 </script>
 
-<button class="flex flex-col gap-4 p-4 bg-[var(--pd-content-card-carousel-card-bg)] hover:bg-[var(--pd-content-card-carousel-card-hover-bg)] rounded-md" class:opacity-60={!permitted} onclick={openLink}>
+<button class="flex flex-col gap-4 p-4 bg-[var(--pd-content-card-carousel-card-bg)] hover:bg-[var(--pd-content-card-carousel-card-hover-bg)] rounded-md" class:opacity-60={!permitted} aria-label="View {type} resources" onclick={openLink}>
   <div class="text-start flex">
     <span class="text-[var(--pd-invert-content-card-text)] font-semibold grow">{type}</span>
     {#if !permitted}

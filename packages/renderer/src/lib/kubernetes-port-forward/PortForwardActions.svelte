@@ -35,9 +35,11 @@ async function openExternal(): Promise<void> {
 
 <ListItemButtonIcon
   title="Open forwarded port"
+  ariaLabel="Open forwarded port {object.name}:{object.forward.localPort}"
   onClick={openExternal.bind(undefined)}
   icon={faSquareUpRight} />
 <ListItemButtonIcon
   title="Delete forwarded port"
+  ariaLabel="Delete forwarded port {object.name}:{object.forward.localPort}"
   onClick={(): void => withConfirmation(deletePortForward, `Delete port forward`)}
   icon={faTrash} />

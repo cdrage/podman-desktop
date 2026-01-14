@@ -197,6 +197,9 @@ function onWindowClick(e: Event): void {
     disabled={disabled}
     id={id}
     name={name}
+    aria-label={ariaLabel ? `${ariaLabel}: ${selectLabel}` : selectLabel}
+    aria-expanded={opened}
+    aria-haspopup="listbox"
     onclick={toggleOpen}
     onkeydown={onKeyDown}>
     {@render left?.()}
@@ -211,9 +214,13 @@ function onWindowClick(e: Event): void {
 
   {#if opened}
     <div
+      role="listbox"
       class="absolute top-full right-0 z-10 w-full max-h-80 rounded-md bg-[var(--pd-dropdown-bg)] border-[var(--pd-input-field-hover-stroke)] border-[1px] overflow-y-auto whitespace-nowrap">
       {#each options as option, i (i)}
         <button
+          role="option"
+          aria-label={option.label}
+          aria-selected={option.value === value}
           onkeydown={onKeyDown}
           onmouseenter={(): void => onEnter(i)}
           onclick={(e): void => onSelect(e, option.value)}
@@ -230,7 +237,7 @@ function onWindowClick(e: Event): void {
     </div>
   {/if}
 
-  <input name={name} value={value} type="hidden" aria-label="hidden input"/>
+  <input name={name} value={value} type="hidden" aria-label={ariaLabel ?? name ?? 'dropdown value'}/>
 
   <select use:buildOptions class="hidden" bind:value={value}>
     {@render children?.()}

@@ -368,6 +368,7 @@ async function searchFunction(value: string): Promise<void> {
         <Typeahead
           id="imageName"
           name="imageName"
+          ariaLabel="Image to pull"
           placeholder="Image name"
           onInputChange={searchFunction}
           resultItems={searchResult}
@@ -423,11 +424,12 @@ async function searchFunction(value: string): Promise<void> {
             icon={faArrowCircleDown}
             disabled={imageNameIsInvalid}
             on:click={pullImage}
+            aria-label="Pull image"
             inProgress={pullInProgress}>
             Pull image
           </Button>
         {:else}
-          <Button on:click={pullImageFinished}>Done</Button>
+          <Button on:click={pullImageFinished} aria-label="Done">Done</Button>
         {/if}
         {#if pullError}
           <ErrorMessage error={pullError} />

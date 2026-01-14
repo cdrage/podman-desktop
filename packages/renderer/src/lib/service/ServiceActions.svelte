@@ -18,6 +18,7 @@ async function deleteService(): Promise<void> {
 
 <ListItemButtonIcon
   title="Delete Service"
+  ariaLabel="Delete Service {service.name}"
   onClick={(): void => withConfirmation(deleteService, `delete service ${service.name}`)}
   detailed={detailed}
   icon={faTrash} />

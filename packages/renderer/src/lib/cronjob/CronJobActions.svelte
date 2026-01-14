@@ -21,6 +21,7 @@ async function deleteCronJob(): Promise<void> {
 
 <ListItemButtonIcon
   title="Delete CronJob"
+  ariaLabel="Delete CronJob {cronjob.name}"
   onClick={(): void => withConfirmation(deleteCronJob, `delete cronjob ${cronjob.name}`)}
   detailed={detailed}
   icon={faTrash} />

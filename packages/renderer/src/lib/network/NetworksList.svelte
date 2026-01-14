@@ -119,7 +119,7 @@ function key(network: NetworkInfoUI): string {
 
   {#snippet additionalActions()}
     {#if providerConnections.length > 0}
-      <Button onclick={gotoCreateNetwork} icon={faPlusCircle} title="Create a network" aria-label="Create"
+      <Button onclick={gotoCreateNetwork} icon={faPlusCircle} title="Create a network" aria-label="Create Network"
         >Create</Button>
     {/if}
   {/snippet}

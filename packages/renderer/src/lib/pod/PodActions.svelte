@@ -145,6 +145,7 @@ const MenuComponent = $derived(dropdownMenu ? DropdownMenu : FlatMenu);
 
 <ListItemButtonIcon
   title="Start Pod"
+  ariaLabel="Start Pod {pod.name}"
   onClick={startPod}
   hidden={pod.status === 'RUNNING' || pod.status === 'STOPPING'}
   detailed={detailed}
@@ -152,6 +153,7 @@ const MenuComponent = $derived(dropdownMenu ? DropdownMenu : FlatMenu);
   icon={faPlay} />
 <ListItemButtonIcon
   title="Stop Pod"
+  ariaLabel="Stop Pod {pod.name}"
   onClick={stopPod}
   hidden={!(pod.status === 'RUNNING' || pod.status === 'STOPPING')}
   detailed={detailed}
@@ -159,16 +161,18 @@ const MenuComponent = $derived(dropdownMenu ? DropdownMenu : FlatMenu);
   icon={faStop} />
 <ListItemButtonIcon
   title="Delete Pod"
+  ariaLabel="Delete Pod {pod.name}"
   onClick={(): void => withConfirmation(deletePod, `delete pod ${pod.name}`)}
   icon={faTrash}
   detailed={detailed}
   inProgress={pod.actionInProgress && pod.status === 'DELETING'} />
 
 <!-- If dropdownMenu is true, use it, otherwise just show the regular buttons -->
-<MenuComponent>
+<MenuComponent title="More actions for pod {pod.name}">
   {#if !detailed}
     <ListItemButtonIcon
       title="Generate Kube"
+      ariaLabel="Generate Kube {pod.name}"
       onClick={openGenerateKube}
       menu={dropdownMenu}
       detailed={detailed}
@@ -176,6 +180,7 @@ const MenuComponent = $derived(dropdownMenu ? DropdownMenu : FlatMenu);
   {/if}
   <ListItemButtonIcon
     title="Deploy to Kubernetes"
+    ariaLabel="Deploy to Kubernetes {pod.name}"
     onClick={deployToKubernetes}
     menu={dropdownMenu}
     detailed={detailed}
@@ -183,6 +188,7 @@ const MenuComponent = $derived(dropdownMenu ? DropdownMenu : FlatMenu);
   {#if openingUrls.length === 0}
     <ListItemButtonIcon
       title="Open Exposed Port"
+      ariaLabel="Open Exposed Port for pod {pod.name}"
       menu={dropdownMenu}
       enabled={false}
       hidden={dropdownMenu}
@@ -191,6 +197,7 @@ const MenuComponent = $derived(dropdownMenu ? DropdownMenu : FlatMenu);
   {:else if openingUrls.length === 1}
     <ListItemButtonIcon
       title="Open {extractPort(openingUrls[0])}"
+      ariaLabel="Open port {extractPort(openingUrls[0])} for pod {pod.name}"
       onClick={(): Promise<void> => window.openExternal(openingUrls[0])}
       menu={dropdownMenu}
       enabled={pod.status === 'RUNNING'}
@@ -198,10 +205,11 @@ const MenuComponent = $derived(dropdownMenu ? DropdownMenu : FlatMenu);
       detailed={detailed}
       icon={faExternalLinkSquareAlt} />
   {:else if openingUrls.length > 1}
-    <DropdownMenu icon={faExternalLinkSquareAlt} hidden={dropdownMenu} shownAsMenuActionItem={true}>
+    <DropdownMenu icon={faExternalLinkSquareAlt} hidden={dropdownMenu} shownAsMenuActionItem={true} title="Open exposed ports for pod {pod.name}">
       {#each openingUrls as url, index (index)}
         <ListItemButtonIcon
           title="Open {extractPort(url)}"
+          ariaLabel="Open port {extractPort(url)} for pod {pod.name}"
           onClick={(): Promise<void> => window.openExternal(url)}
           menu={!dropdownMenu}
           enabled={pod.status === 'RUNNING'}
@@ -213,6 +221,7 @@ const MenuComponent = $derived(dropdownMenu ? DropdownMenu : FlatMenu);
   {/if}
   <ListItemButtonIcon
     title="Restart Pod"
+    ariaLabel="Restart Pod {pod.name}"
     onClick={restartPod}
     menu={dropdownMenu}
     detailed={detailed}

@@ -373,7 +373,7 @@ async function removeExistingRegistry(registry: containerDesktopAPI.Registry): P
 
                 <!-- Show/hide password end -->
                 <!-- containerDesktopAPI.Registry menu start -->
-                <DropdownMenu>
+                <DropdownMenu title="Actions for registry {registry.name ?? registry.serverUrl}">
                   <DropdownMenu.Item
                     title="Login"
                     onClick={(): void => markRegistryAsModified(registry)}

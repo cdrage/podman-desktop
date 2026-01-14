@@ -699,17 +699,19 @@ const envDialogOptions: OpenDialogOptions = {
                     placeholder="Path on the host"
                     bind:value={volumeMount.source}
                     options={volumeDialogOptions}
-                    aria-label="volumeMount.{index}" />
-                  <Input bind:value={volumeMount.target} placeholder="Path inside the container" class="ml-2" />
+                    aria-label="Host path for volume {index + 1}" />
+                  <Input bind:value={volumeMount.target} placeholder="Path inside the container" class="ml-2" aria-label="Container path for volume {index + 1}" />
                   <Button
                     type="link"
                     hidden={index === volumeMounts.length - 1}
                     on:click={(): void => deleteVolumeMount(index)}
+                    aria-label="Remove volume mount {index + 1}"
                     icon={faMinusCircle} />
                   <Button
                     type="link"
                     hidden={index < volumeMounts.length - 1}
                     on:click={addVolumeMount}
+                    aria-label="Add volume mount"
                     icon={faPlusCircle} />
                 </div>
               {/each}
@@ -730,6 +732,7 @@ const envDialogOptions: OpenDialogOptions = {
                     placeholder="Enter value for port {port}"
                     error={containerPortMapping[index].error}
                     class="ml-2 w-full"
+                    aria-label="Local port for {port}"
                     title={containerPortMapping[index].error} />
                 </div>
               {/each}
@@ -766,21 +769,24 @@ const envDialogOptions: OpenDialogOptions = {
               <!-- Display the list of existing environment variables -->
               {#each environmentVariables as environmentVariable, index (index)}
                 <div class="flex flex-row justify-center items-center w-full py-1">
-                  <Input bind:value={environmentVariable.key} placeholder="Name" class="w-full" />
+                  <Input bind:value={environmentVariable.key} placeholder="Name" class="w-full" aria-label="Environment variable name {index + 1}" />
 
                   <Input
                     bind:value={environmentVariable.value}
                     placeholder="Value (leave blank for empty)"
-                    class="ml-2" />
+                    class="ml-2"
+                    aria-label="Environment variable value {index + 1}" />
                   <Button
                     type="link"
                     hidden={index === environmentVariables.length - 1}
                     on:click={(): void => deleteEnvVariable(index)}
+                    aria-label="Remove environment variable {index + 1}"
                     icon={faMinusCircle} />
                   <Button
                     type="link"
                     hidden={index < environmentVariables.length - 1}
                     on:click={addEnvVariable}
+                    aria-label="Add environment variable"
                     icon={faPlusCircle} />
                 </div>
               {/each}
@@ -797,7 +803,7 @@ const envDialogOptions: OpenDialogOptions = {
                     placeholder="Environment file containing KEY=VALUE items"
                     bind:value={environmentFiles[index]}
                     options={envDialogOptions}
-                    aria-label="environmentFile.{index}" />
+                    aria-label="Environment file {index + 1}" />
                   <Button
                     type="link"
                     hidden={index === environmentFiles.length - 1}
@@ -835,7 +841,8 @@ const envDialogOptions: OpenDialogOptions = {
                 <Input
                   bind:value={runUser}
                   placeholder="If you specify a username, user must exist in /etc/passwd file (use user id instead)"
-                  class="ml-2" />
+                  class="ml-2"
+                  aria-label="Run as user" />
               </div>
 
               <!-- Autoremove-->
@@ -856,7 +863,7 @@ const envDialogOptions: OpenDialogOptions = {
                 class="p-0 flex flex-row justify-start items-center align-middle w-full text-[var(--pd-content-card-text)]">
                 <span class="text-sm w-28 inline-block align-middle whitespace-nowrap">Policy name:</span>
 
-                <Dropdown class="w-full" name="restartPolicyName" bind:value={restartPolicyName}>
+                <Dropdown class="w-full" name="restartPolicyName" bind:value={restartPolicyName} aria-label="Restart policy">
                   <option value="">No restart</option>
                   <option value="no">Do not restart automatically</option>
                   <option value="always">Always restart</option>
@@ -877,6 +884,7 @@ const envDialogOptions: OpenDialogOptions = {
                   bind:value={restartPolicyMaxRetryCount}
                   type="integer"
                   class="w-24 p-2"
+                  aria-label="Restart retry count"
                   disabled={restartPolicyName !== 'on-failure'} />
               </div>
 
@@ -947,17 +955,20 @@ const envDialogOptions: OpenDialogOptions = {
                   <Input
                     bind:value={securityOpts[index]}
                     placeholder="Enter a security option (Ex. seccomp=/path/to/profile.json)"
-                    class="ml-2" />
+                    class="ml-2"
+                    aria-label="Security option {index + 1}" />
 
                   <Button
                     type="link"
                     hidden={index === securityOpts.length - 1}
                     on:click={(): void => deleteSecurityOpt(index)}
+                    aria-label="Remove security option {index + 1}"
                     icon={faMinusCircle} />
                   <Button
                     type="link"
                     hidden={index < securityOpts.length - 1}
                     on:click={addSecurityOpt}
+                    aria-label="Add security option"
                     icon={faPlusCircle} />
                 </div>
               {/each}
@@ -974,14 +985,15 @@ const envDialogOptions: OpenDialogOptions = {
               <!-- Display the list of existing capAdd -->
               {#each capAdds as _, index (index)}
                 <div class="flex flex-row justify-center items-center w-full py-1">
-                  <Input bind:value={capAdds[index]} placeholder="Enter a kernel capability (Ex. SYS_ADMIN)" class="ml-4" />
+                  <Input bind:value={capAdds[index]} placeholder="Enter a kernel capability (Ex. SYS_ADMIN)" class="ml-4" aria-label="Add capability {index + 1}" />
 
                   <Button
                     type="link"
                     hidden={index === capAdds.length - 1}
                     on:click={(): void => deleteCapAdd(index)}
+                    aria-label="Remove add capability {index + 1}"
                     icon={faMinusCircle} />
-                  <Button type="link" hidden={index < capAdds.length - 1} on:click={addCapAdd} icon={faPlusCircle} />
+                  <Button type="link" hidden={index < capAdds.length - 1} on:click={addCapAdd} aria-label="Add another capability" icon={faPlusCircle} />
                 </div>
               {/each}
               <label
@@ -991,14 +1003,15 @@ const envDialogOptions: OpenDialogOptions = {
               <!-- Display the list of existing capDrop -->
               {#each capDrops as _, index (index)}
                 <div class="flex flex-row justify-center items-center w-full py-1">
-                  <Input bind:value={capDrops[index]} placeholder="Enter a kernel capability (Ex. SYS_ADMIN)" class="ml-4" />
+                  <Input bind:value={capDrops[index]} placeholder="Enter a kernel capability (Ex. SYS_ADMIN)" class="ml-4" aria-label="Drop capability {index + 1}" />
 
                   <Button
                     type="link"
                     hidden={index === capDrops.length - 1}
                     on:click={(): void => deleteCappDrop(index)}
+                    aria-label="Remove drop capability {index + 1}"
                     icon={faMinusCircle} />
-                  <Button type="link" hidden={index < capDrops.length - 1} on:click={addCapDrop} icon={faPlusCircle} />
+                  <Button type="link" hidden={index < capDrops.length - 1} on:click={addCapDrop} aria-label="Add another drop capability" icon={faPlusCircle} />
                 </div>
               {/each}
 
@@ -1008,7 +1021,7 @@ const envDialogOptions: OpenDialogOptions = {
                 class="pt-4 block mb-2 text-sm font-medium text-[var(--pd-content-card-header-text)]"
                 >Specify user namespace to use:</label>
               <div class="flex flex-row justify-center items-center w-full">
-                <Input bind:value={userNamespace} placeholder="Enter a user namespace" class="ml-2 w-full" />
+                <Input bind:value={userNamespace} placeholder="Enter a user namespace" class="ml-2 w-full" aria-label="User namespace" />
               </div>
             </div>
           </Route>
@@ -1021,7 +1034,7 @@ const envDialogOptions: OpenDialogOptions = {
                 class="block mb-2 text-sm font-medium text-[var(--pd-content-card-header-text)]"
                 >Defines container hostname:</label>
               <div class="flex flex-row justify-center items-center w-full">
-                <Input bind:value={hostname} placeholder="Must be a valid RFC 1123 hostname" class="ml-2" />
+                <Input bind:value={hostname} placeholder="Must be a valid RFC 1123 hostname" class="ml-2" aria-label="Container hostname" />
               </div>
 
               <!-- DNS -->
@@ -1032,17 +1045,19 @@ const envDialogOptions: OpenDialogOptions = {
 
               {#each dnsServers as _, index (index)}
                 <div class="flex flex-row justify-center items-center w-full py-1">
-                  <Input bind:value={dnsServers[index]} placeholder="IP Address" class="ml-2" />
+                  <Input bind:value={dnsServers[index]} placeholder="IP Address" class="ml-2" aria-label="DNS server {index + 1}" />
 
                   <Button
                     type="link"
                     hidden={index === dnsServers.length - 1}
                     on:click={(): void => deleteDnsServer(index)}
+                    aria-label="Remove DNS server {index + 1}"
                     icon={faMinusCircle} />
                   <Button
                     type="link"
                     hidden={index < dnsServers.length - 1}
                     on:click={addDnsServer}
+                    aria-label="Add DNS server"
                     icon={faPlusCircle} />
                 </div>
               {/each}
@@ -1054,18 +1069,20 @@ const envDialogOptions: OpenDialogOptions = {
               <!-- Display the list of extra hosts -->
               {#each extraHosts as extraHost, index (index)}
                 <div class="flex flex-row justify-center items-center w-full py-1">
-                  <Input bind:value={extraHost.host} placeholder="Hostname" class="ml-2" />
+                  <Input bind:value={extraHost.host} placeholder="Hostname" class="ml-2" aria-label="Extra host hostname {index + 1}" />
 
-                  <Input bind:value={extraHost.ip} placeholder="IP Address" class="ml-2" />
+                  <Input bind:value={extraHost.ip} placeholder="IP Address" class="ml-2" aria-label="Extra host IP {index + 1}" />
                   <Button
                     type="link"
                     hidden={index === extraHosts.length - 1}
                     on:click={(): void => deleteExtraHost(index)}
+                    aria-label="Remove extra host {index + 1}"
                     icon={faMinusCircle} />
                   <Button
                     type="link"
                     hidden={index < extraHosts.length - 1}
                     on:click={addExtraHost}
+                    aria-label="Add extra host"
                     icon={faPlusCircle} />
                 </div>
               {/each}
@@ -1079,7 +1096,7 @@ const envDialogOptions: OpenDialogOptions = {
                 class="p-0 flex flex-row justify-start items-center align-middle w-full text-[var(--pd-content-card-text)]">
                 <span class="text-sm w-28 inline-block align-middle whitespace-nowrap">Mode:</span>
 
-                <Dropdown class="w-full" name="providerChoice" bind:value={networkingMode}>
+                <Dropdown class="w-full" name="providerChoice" bind:value={networkingMode} aria-label="Network mode">
                   <option value="bridge">Creates a network stack on the default bridge (default)</option>
                   <option value="none">No networking</option>
                   <option value="host">Use the host networking stack</option>
@@ -1098,7 +1115,8 @@ const envDialogOptions: OpenDialogOptions = {
                     class="w-full"
                     disabled={networkingMode !== 'choice-network'}
                     name="networkingModeUserNetwork"
-                    bind:value={networkingModeUserNetwork}>
+                    bind:value={networkingModeUserNetwork}
+                    aria-label="Select network">
                     {#each engineNetworks as network (network.Id)}
                       <option value={network.Id}
                         >{network.Name} (used by {Object.keys(network.Containers ?? {}).length} containers)</option>
@@ -1115,7 +1133,8 @@ const envDialogOptions: OpenDialogOptions = {
                     class="w-full"
                     disabled={networkingMode !== 'choice-container'}
                     name="networkingModeUserContainer"
-                    bind:value={networkingModeUserContainer}>
+                    bind:value={networkingModeUserContainer}
+                    aria-label="Select container for networking">
                     {#each engineContainers as container (container.id)}
                       <option value={container.id}>{container.name} ({container.shortId})</option>
                     {/each}

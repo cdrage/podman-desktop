@@ -22,6 +22,7 @@ interface Props {
   inProgress?: boolean;
   tooltip?: string;
   contextUI?: ContextUI;
+  ariaLabel?: string;
 }
 
 let {
@@ -36,6 +37,7 @@ let {
   inProgress = false,
   tooltip = '',
   contextUI,
+  ariaLabel,
 }: Props = $props();
 
 let globalContext: ContextUI;
@@ -113,7 +115,7 @@ const styleClass = $derived(
   <!-- enabled button -->
   <button
     title={title}
-    aria-label={title}
+    aria-label={ariaLabel ?? title}
     onclick={handleClick}
     class="{styleClass} relative"
     class:disabled={inProgress}

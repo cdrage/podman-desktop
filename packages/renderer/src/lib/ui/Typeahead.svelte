@@ -18,6 +18,7 @@ interface Props {
   onEnter?: () => void;
   class?: string;
   compare?: (a: string, b: string) => number;
+  ariaLabel?: string;
 }
 
 let {
@@ -35,6 +36,7 @@ let {
   onEnter,
   class: className,
   compare,
+  ariaLabel,
 }: Props = $props();
 
 let inputDelayTimeout: NodeJS.Timeout | undefined = undefined;
@@ -275,6 +277,7 @@ function onWindowClick(e: Event): void {
     disabled={disabled}
     id={id}
     name={name}
+    aria-label={ariaLabel}
     oninput={onInput}
     onkeydown={onKeyDown}
     onfocus={processInput}
@@ -291,13 +294,14 @@ function onWindowClick(e: Event): void {
     {#each items as item, i (i)}
       {#if itemHeadings[i]}
         {#each itemHeadings[i] as heading, index (index)}
-          <button class='p-[2px] text-[var(--pd-button-disabled-text)] w-full text-start' disabled>{heading}</button>
+          <button class='p-[2px] text-[var(--pd-button-disabled-text)] w-full text-start' aria-label="Category: {heading}" disabled>{heading}</button>
         {/each}
       {/if}
       <button
         bind:this={scrollElements[i]}
         class:bg-[var(--pd-content-card-hover-bg)]={i === highlightIndex}
         class="p-1 text-start w-full cursor-pointer"
+        aria-label="Select {item}"
         onclick={(): void => onItemSelected(item)}
         onpointerenter={(): void => {
           highlightIndex = i;

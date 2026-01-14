@@ -233,6 +233,7 @@ function removeDnsServer(index: number): void {
                   bind:value={networkInfo.networkName}
                   name="networkName"
                   id="networkName"
+                  aria-label="Network name"
                   placeholder="Network name"
                   required
                   class="w-full" />
@@ -360,11 +361,12 @@ function removeDnsServer(index: number): void {
         </div>
 
         <div class="w-full flex flex-row space-x-4 pt-4">
-          <Button type="secondary" class="w-full" onclick={cancelRoute}>Cancel</Button>
+          <Button type="secondary" class="w-full" aria-label="Cancel" onclick={cancelRoute}>Cancel</Button>
           <Button
             disabled={hasInvalidFields || createNetworkInProgress}
             inProgress={createNetworkInProgress}
             class="w-full"
+            aria-label="Create Network"
             onclick={createNetwork}>
             Create
           </Button>

@@ -14,8 +14,11 @@ let { selected, url, title }: Props = $props();
   class:hover:border-[var(--pd-tab-hover)]={!selected}>
   <a
     href={url}
+    role="tab"
     class="px-4 py-2 text-[var(--pd-tab-text)] no-underline"
     class:text-[var(--pd-tab-text-highlight)]={selected}
+    aria-label="{title} tab"
+    aria-selected={selected}
     aria-controls="open-tabs-list-{title.toLowerCase()}-panel"
     id="open-tabs-list-{title.toLowerCase()}-link">
     {title}

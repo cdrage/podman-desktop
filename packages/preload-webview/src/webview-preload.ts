@@ -195,6 +195,108 @@ export class WebviewPreload {
 
     contextBridge.exposeInMainWorld('acquirePodmanDesktopApi', () => this.buildApi());
 
+    // Expose Selkie Mode automation helpers
+    contextBridge.exposeInMainWorld('__pdAI', {
+      click: (text: string): { success: boolean; error?: string; clicked?: string } => {
+        const searchText = text.toLowerCase();
+
+        // Helper to simulate proper click
+        const simulateClick = (el: Element): void => {
+          const rect = el.getBoundingClientRect();
+          const opts = {
+            bubbles: true,
+            cancelable: true,
+            view: window,
+            clientX: rect.left + rect.width / 2,
+            clientY: rect.top + rect.height / 2,
+            button: 0,
+          };
+          el.dispatchEvent(new MouseEvent('mousedown', opts));
+          el.dispatchEvent(new MouseEvent('mouseup', opts));
+          el.dispatchEvent(new MouseEvent('click', opts));
+        };
+
+        // Search buttons
+        for (const btn of document.querySelectorAll('button')) {
+          const btnText = (btn.textContent || '').toLowerCase();
+          const ariaLabel = (btn.getAttribute('aria-label') ?? '').toLowerCase();
+          if (btnText.includes(searchText) || ariaLabel.includes(searchText)) {
+            simulateClick(btn);
+            return { success: true, clicked: btn.textContent?.trim() };
+          }
+        }
+
+        // Search links
+        for (const link of document.querySelectorAll('a')) {
+          const linkText = (link.textContent || '').toLowerCase();
+          if (linkText.includes(searchText)) {
+            simulateClick(link);
+            return { success: true, clicked: link.textContent?.trim() };
+          }
+        }
+
+        // Search any clickable element
+        for (const el of document.querySelectorAll('[role="button"], [role="option"], [role="menuitem"]')) {
+          const elText = (el.textContent || '').toLowerCase();
+          if (elText.includes(searchText)) {
+            simulateClick(el);
+            return { success: true, clicked: (el as HTMLElement).textContent?.trim() };
+          }
+        }
+
+        return { success: false, error: `Element not found: ${text}` };
+      },
+
+      fillInput: (label: string, value: string): { success: boolean; error?: string } => {
+        const searchText = label.toLowerCase();
+
+        for (const input of document.querySelectorAll('input, textarea')) {
+          const el = input as HTMLInputElement | HTMLTextAreaElement;
+          const ariaLabel = (el.getAttribute('aria-label') ?? '').toLowerCase();
+          const placeholder = (el.getAttribute('placeholder') ?? '').toLowerCase();
+          const name = (el.getAttribute('name') ?? '').toLowerCase();
+
+          if (ariaLabel.includes(searchText) || placeholder.includes(searchText) || name.includes(searchText)) {
+            el.focus();
+            el.value = value;
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+            return { success: true };
+          }
+        }
+
+        return { success: false, error: `Input not found: ${label}` };
+      },
+
+      getContent: (): { buttons: string[]; inputs: string[]; text: string[] } => {
+        const buttons: string[] = [];
+        const inputs: string[] = [];
+        const text: string[] = [];
+
+        document.querySelectorAll('button').forEach(btn => {
+          const t = btn.textContent?.trim();
+          if (t && t.length < 100) buttons.push(t);
+        });
+
+        document.querySelectorAll('input, textarea, select').forEach(el => {
+          const label =
+            el.getAttribute('aria-label') ?? el.getAttribute('placeholder') ?? el.getAttribute('name') ?? '';
+          if (label) inputs.push(label);
+        });
+
+        document.querySelectorAll('h1, h2, h3, p, label').forEach(el => {
+          const t = el.textContent?.trim();
+          if (t && t.length > 2 && t.length < 200) text.push(t);
+        });
+
+        return {
+          buttons: [...new Set(buttons)].slice(0, 20),
+          inputs: [...new Set(inputs)].slice(0, 10),
+          text: [...new Set(text)].slice(0, 30),
+        };
+      },
+    });
+
     this.changeContent();
 
     // broadcast messages from the main process to the webview
