@@ -222,16 +222,27 @@ export class Updater {
   private registerCommands(): void {
     // Update will create a standard "autoUpdater" dialog / update process
     this.commandRegistry.registerCommand('update', async (context?: 'startup' | 'status-bar-entry') => {
+      const allowUpdates = this.getAllowUpdatesConfigurationValue();
+
       if (this.#updateAlreadyDownloaded) {
-        const result = await this.messageBox.showMessageBox({
-          type: 'info',
-          title: 'Update',
-          message: 'There is already an update downloaded. Please Restart Podman Desktop.',
-          cancelId: 1,
-          buttons: ['Restart', 'Cancel'],
-        });
-        if (result.response === 0) {
-          setImmediate(() => autoUpdater.quitAndInstall());
+        if (allowUpdates) {
+          const result = await this.messageBox.showMessageBox({
+            type: 'info',
+            title: 'Update',
+            message: 'There is already an update downloaded. Please Restart Podman Desktop.',
+            cancelId: 1,
+            buttons: ['Restart', 'Cancel'],
+          });
+          if (result.response === 0) {
+            setImmediate(() => autoUpdater.quitAndInstall());
+          }
+        } else {
+          await this.messageBox.showMessageBox({
+            type: 'info',
+            title: 'Update',
+            message: 'There is already an update downloaded. Updates are disabled by your administrator.',
+            buttons: ['OK'],
+          });
         }
         return;
       }
@@ -250,7 +261,13 @@ export class Updater {
       const updateVersion = this.#nextVersion ?? '';
 
       let buttons: string[];
-      if (context === 'startup') {
+      if (!allowUpdates) {
+        if (context === 'startup') {
+          buttons = [`What's new`, 'Remind me later', `Don't show again`];
+        } else {
+          buttons = [`What's new`, 'Cancel'];
+        }
+      } else if (context === 'startup') {
         buttons = ['Update now', `What's new`, 'Remind me later', `Don't show again`];
       } else {
         buttons = ['Update now', `What's new`, 'Cancel'];
@@ -261,8 +278,19 @@ export class Updater {
         title: 'Update Available now',
         message: `A new version ${updateVersion} of Podman Desktop is available. Do you want to update your current version ${this.#currentVersion}?`,
         buttons: buttons,
-        cancelId: 2,
+        cancelId: allowUpdates ? 2 : 1,
       });
+
+      if (!allowUpdates) {
+        // Without "Update now", indices shift down by 1
+        if (context === 'startup' && result.response === 2) {
+          this.updateConfigurationValue('never');
+        } else if (result.response === 0) {
+          await this.openReleaseNotes(updateVersion);
+        }
+        return;
+      }
+
       if (result.response === 3) {
         this.updateConfigurationValue('never');
       } else if (result.response === 1) {
@@ -328,6 +356,11 @@ export class Updater {
             default: 'startup',
             enum: ['startup', 'never'],
           },
+          ['preferences.update.allowUpdates']: {
+            description: 'Allow Podman Desktop to be updated. When disabled, all update actions are hidden.',
+            type: 'boolean',
+            default: true,
+          },
           ['preferences.update.disableDifferentialDownload']: {
             description: 'Disable electron disableDifferentialDownload',
             type: 'boolean',
@@ -347,6 +380,16 @@ export class Updater {
     return this.configurationRegistry
       .getConfiguration('preferences')
       .get<boolean>('update.disableDifferentialDownload', isWindows());
+  }
+
+  /**
+   * Retrieves the value of the allowUpdates configuration.
+   * @returns Whether updates are allowed.
+   */
+  private getAllowUpdatesConfigurationValue(): boolean {
+    return this.configurationRegistry
+      .getConfiguration('preferences')
+      .get<boolean>('update.allowUpdates', true);
   }
 
   /**
@@ -399,22 +442,24 @@ export class Updater {
       this.#downloadTask.status = 'success';
     }
 
-    this.messageBox
-      .showMessageBox({
-        title: 'Update Downloaded',
-        message: `v${updatedDownloadedEvent.version} update downloaded, Do you want to restart Podman Desktop ?`,
-        cancelId: 1,
-        type: 'info',
-        buttons: ['Restart', 'Cancel'],
-      })
-      .then(result => {
-        if (result.response === 0) {
-          setImmediate(() => autoUpdater.quitAndInstall());
-        }
-      })
-      .catch((error: unknown) => {
-        console.error('unable to show message box', error);
-      });
+    if (this.getAllowUpdatesConfigurationValue()) {
+      this.messageBox
+        .showMessageBox({
+          title: 'Update Downloaded',
+          message: `v${updatedDownloadedEvent.version} update downloaded, Do you want to restart Podman Desktop ?`,
+          cancelId: 1,
+          type: 'info',
+          buttons: ['Restart', 'Cancel'],
+        })
+        .then(result => {
+          if (result.response === 0) {
+            setImmediate(() => autoUpdater.quitAndInstall());
+          }
+        })
+        .catch((error: unknown) => {
+          console.error('unable to show message box', error);
+        });
+    }
   }
 
   /**

@@ -14,6 +14,7 @@ let notesURL: string | undefined = $state();
 let currentVersion: string | undefined = $state();
 let notesInfo: ReleaseNotes | undefined = $state();
 let imageError: boolean = $state(false);
+let allowUpdates: boolean = $state(true);
 
 function onDidChangeConfigurationCallback(e: Event): void {
   if (!('detail' in e) || !e.detail || typeof e.detail !== 'object') {
@@ -52,6 +53,10 @@ onMount(async () => {
   onDidChangeConfiguration.addEventListener('releaseNotesBanner.show', onDidChangeConfigurationCallback);
   currentVersion = await window.getPodmanDesktopVersion();
   showBanner = (await window.getConfigurationValue(`releaseNotesBanner.show`)) !== currentVersion ? true : false;
+  const allowUpdatesValue = await window.getConfigurationValue<boolean>('preferences.update.allowUpdates');
+  if (allowUpdatesValue === false) {
+    allowUpdates = false;
+  }
   await getInfoFromNotes();
 });
 
@@ -89,7 +94,7 @@ onDestroy(async () => {
         {/if}
         <div class="flex flex-row justify-end items-center gap-3 mt-2">
           <Link on:click={openReleaseNotes}>Learn more</Link>
-          <Button on:click={updatePodmanDesktop} hidden={!$updateAvailable} icon={faCircleArrowUp}>Update</Button>
+          <Button on:click={updatePodmanDesktop} hidden={!$updateAvailable || !allowUpdates} icon={faCircleArrowUp}>Update</Button>
         </div>
       </div>
     </div>

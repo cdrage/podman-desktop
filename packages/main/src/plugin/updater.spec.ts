@@ -563,6 +563,174 @@ describe('expect update command to depends on context', async () => {
   });
 });
 
+describe('allowUpdates=false removes Update now button', async () => {
+  type UpdateCommandListener = (context: 'startup' | 'status-bar-entry') => Promise<void>;
+  const getUpdateListenerWithAllowUpdatesFalse = async (): Promise<UpdateCommandListener> => {
+    vi.mocked(messageBoxMock.showMessageBox).mockResolvedValue({
+      response: 1, // Cancel in status-bar-entry context without Update now
+    });
+
+    mockConfiguration({
+      'update.reminder': 'never',
+      'update.allowUpdates': false,
+    });
+
+    vi.mocked(autoUpdater.checkForUpdates).mockResolvedValue({
+      updateInfo: {
+        version: '@debug-next',
+      },
+    } as unknown as UpdateCheckResult);
+
+    let mListener: UpdateCommandListener | undefined;
+    vi.mocked(commandRegistryMock.registerCommand).mockImplementation(
+      (channel: string, listener: () => Promise<void>) => {
+        if (channel === 'update') mListener = listener;
+        return Disposable.noop();
+      },
+    );
+
+    const updater = new Updater(
+      messageBoxMock,
+      configurationRegistryMock,
+      statusBarRegistryMock,
+      commandRegistryMock,
+      taskManagerMock,
+      apiSenderMock,
+    );
+    updater.init();
+
+    if (mListener === undefined) throw new Error('mListener undefined');
+
+    await vi.waitUntil(
+      () => {
+        return updater.updateAvailable();
+      },
+      {
+        interval: 500,
+        timeout: 2000,
+      },
+    );
+
+    return mListener;
+  };
+
+  test('startup context without Update now button', async () => {
+    const mListener = await getUpdateListenerWithAllowUpdatesFalse();
+
+    await mListener?.('startup');
+
+    expect(messageBoxMock.showMessageBox).toHaveBeenCalledWith({
+      cancelId: 1,
+      buttons: [`What's new`, 'Remind me later', `Don't show again`],
+      message:
+        'A new version v@debug-next of Podman Desktop is available. Do you want to update your current version v@debug?',
+      title: 'Update Available now',
+      type: 'info',
+    });
+  });
+
+  test('status-bar-entry context without Update now button', async () => {
+    const mListener = await getUpdateListenerWithAllowUpdatesFalse();
+
+    await mListener?.('status-bar-entry');
+
+    expect(messageBoxMock.showMessageBox).toHaveBeenCalledWith({
+      cancelId: 1,
+      buttons: [`What's new`, 'Cancel'],
+      message:
+        'A new version v@debug-next of Podman Desktop is available. Do you want to update your current version v@debug?',
+      title: 'Update Available now',
+      type: 'info',
+    });
+  });
+
+  test('What\'s new opens release notes when allowUpdates is false', async () => {
+    vi.mocked(shell.openExternal).mockResolvedValue();
+    const mListener = await getUpdateListenerWithAllowUpdatesFalse();
+
+    vi.mocked(messageBoxMock.showMessageBox).mockResolvedValueOnce({
+      response: 0, // What's new is index 0 when Update now is removed
+    });
+
+    await mListener?.('status-bar-entry');
+
+    // Verify release notes were opened (openReleaseNotes calls shell.openExternal)
+    expect(shell.openExternal).toHaveBeenCalled();
+  });
+
+  test('Don\'t show again works when allowUpdates is false in startup context', async () => {
+    const mListener = await getUpdateListenerWithAllowUpdatesFalse();
+
+    vi.mocked(messageBoxMock.showMessageBox).mockResolvedValueOnce({
+      response: 2, // Don't show again is index 2 when Update now is removed
+    });
+
+    await mListener?.('startup');
+
+    expect(configurationMock.update).toHaveBeenCalledWith('update.reminder', 'never');
+  });
+
+  test('already downloaded shows informational message when allowUpdates is false', async () => {
+    mockConfiguration({
+      'update.reminder': 'never',
+      'update.allowUpdates': false,
+    });
+
+    // We need to simulate the update already downloaded state
+    // First, get the update command with allowUpdates=true to trigger a download
+    vi.mocked(messageBoxMock.showMessageBox).mockResolvedValue({
+      response: 0,
+    });
+
+    let onUpdateDownloadedCallback: ((event: UpdateDownloadedEvent) => void) | undefined;
+    let updateCommandCallback: UpdateCommandListener | undefined;
+    vi.spyOn(autoUpdater, 'on').mockImplementation((channel: keyof AppUpdaterEvents, listener: unknown): AppUpdater => {
+      if (channel === 'update-downloaded') {
+        onUpdateDownloadedCallback = listener as () => void;
+      }
+      return {} as unknown as AppUpdater;
+    });
+
+    vi.mocked(commandRegistryMock.registerCommand).mockImplementation(
+      (channel: string, callback: () => Promise<void>) => {
+        if (channel === 'update') {
+          updateCommandCallback = callback;
+        }
+        return Disposable.noop();
+      },
+    );
+
+    new Updater(
+      messageBoxMock,
+      configurationRegistryMock,
+      statusBarRegistryMock,
+      commandRegistryMock,
+      taskManagerMock,
+      apiSenderMock,
+    ).init();
+
+    // Simulate update downloaded
+    onUpdateDownloadedCallback?.({
+      downloadedFile: 'foo',
+      version: 'FooVersion',
+    } as unknown as UpdateDownloadedEvent);
+
+    // Now call the update command — should show informational message, not restart option
+    vi.mocked(messageBoxMock.showMessageBox).mockResolvedValueOnce({
+      response: 0,
+    });
+
+    await updateCommandCallback?.('status-bar-entry');
+
+    expect(messageBoxMock.showMessageBox).toHaveBeenCalledWith({
+      type: 'info',
+      title: 'Update',
+      message: 'There is already an update downloaded. Updates are disabled by your administrator.',
+      buttons: ['OK'],
+    });
+  });
+});
+
 describe('download task and progress', async () => {
   test('success', async () => {
     type UpdateCommandCallback = (context: 'startup' | 'status-bar-entry') => Promise<void>;

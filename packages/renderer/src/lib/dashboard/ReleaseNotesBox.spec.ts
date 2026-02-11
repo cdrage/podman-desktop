@@ -161,6 +161,19 @@ test('expect no release notes widget if no notesUrl as well', async () => {
   ).not.toBeInTheDocument();
 });
 
+test('expect update button to be hidden when allowUpdates is false', async () => {
+  updateAvailable.set(true);
+  getConfigurationValueMock.mockImplementation(async (key: string) => {
+    if (key === 'releaseNotesBanner.show') return 'show';
+    if (key === 'preferences.update.allowUpdates') return false;
+    return undefined;
+  });
+  render(ReleaseNotesBox);
+  await waitFor(() => expect(podmanDesktopGetReleaseNotesMock).toBeCalled());
+  await tick();
+  expect(screen.queryByRole('button', { name: 'Update' })).not.toBeInTheDocument();
+});
+
 test('show release notes on configuration change to non-current version value', async () => {
   // do not show release notes
   getConfigurationValueMock.mockResolvedValueOnce('1.1.0');

@@ -1,13 +1,22 @@
 <script lang="ts">
 import { faBoxOpen } from '@fortawesome/free-solid-svg-icons';
 import { Button } from '@podman-desktop/ui-svelte';
+import { onMount } from 'svelte';
 
 import type { CheckStatus, ProviderInfo } from '/@api/provider-info';
 
 export let provider: ProviderInfo;
 let updateInProgress = false;
+let allowUpdates = true;
 
 export let onPreflightChecks: (status: CheckStatus[]) => void;
+
+onMount(async () => {
+  const value = await window.getConfigurationValue<boolean>('preferences.update.allowUpdates');
+  if (value === false) {
+    allowUpdates = false;
+  }
+});
 
 let checksStatus: CheckStatus[] = [];
 
@@ -50,7 +59,7 @@ async function performUpdate(provider: ProviderInfo): Promise<void> {
 }
 </script>
 
-{#if provider?.updateInfo?.version}
+{#if provider?.updateInfo?.version && allowUpdates}
   <Button
     inProgress={updateInProgress}
     disabled={preflightChecksFailed}

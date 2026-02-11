@@ -106,8 +106,16 @@ export class ExtensionsUpdater {
   }
 
   isAutoUpdateEnabled(): boolean {
+    if (!this.getAllowUpdatesConfigurationValue()) {
+      return false;
+    }
     const config = this.configurationRegistry.getConfiguration(ExtensionsUpdaterSettings.SectionName);
     return config.get(ExtensionsUpdaterSettings.AutoUpdate) === true;
+  }
+
+  private getAllowUpdatesConfigurationValue(): boolean {
+    const config = this.configurationRegistry.getConfiguration('preferences');
+    return config.get<boolean>('update.allowUpdates', true);
   }
 
   async checkForUpdates(): Promise<void> {

@@ -123,6 +123,44 @@ afterEach(() => {
   console.error = originalConsoleError;
 });
 
+test('isAutoUpdateEnabled should return false when allowUpdates is false', async () => {
+  // Return true for extensions.autoUpdate but false for update.allowUpdates
+  getConfigMock.mockImplementation((key: string, defaultValue?: unknown) => {
+    if (key === 'update.allowUpdates') {
+      return false;
+    }
+    if (key === 'autoUpdate') {
+      return true;
+    }
+    return defaultValue;
+  });
+
+  // Need to re-setup getConfigurationMock to return per-section
+  getConfigurationMock.mockReturnValue({
+    get: getConfigMock,
+  });
+
+  expect(extensionsUpdater.isAutoUpdateEnabled()).toBe(false);
+});
+
+test('isAutoUpdateEnabled should return true when allowUpdates is true and autoUpdate is true', async () => {
+  getConfigMock.mockImplementation((key: string, defaultValue?: unknown) => {
+    if (key === 'update.allowUpdates') {
+      return true;
+    }
+    if (key === 'autoUpdate') {
+      return true;
+    }
+    return defaultValue;
+  });
+
+  getConfigurationMock.mockReturnValue({
+    get: getConfigMock,
+  });
+
+  expect(extensionsUpdater.isAutoUpdateEnabled()).toBe(true);
+});
+
 test('should check for updates and try to update one extension automatically', async () => {
   const installedExtension1: ExtensionInfo = {
     id: 'foo.extension1',
