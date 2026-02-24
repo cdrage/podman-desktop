@@ -1,0 +1,51 @@
+{
+  "name": "mcp",
+  "displayName": "MCP Server",
+  "description": "Model Context Protocol server for AI assistants to control Podman Desktop",
+  "version": "1.26.0-next",
+  "icon": "icon.png",
+  "publisher": "podman-desktop",
+  "license": "Apache-2.0",
+  "engines": {
+    "podman-desktop": "^0.0.1"
+  },
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "mcp.showConnectionInfo",
+        "title": "MCP: Show Connection Info"
+      }
+    ],
+    "configuration": {
+      "title": "MCP Server",
+      "properties": {
+        "mcp.server.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the MCP server for AI assistant integration"
+        },
+        "mcp.server.port": {
+          "type": "number",
+          "default": 6110,
+          "description": "Port for the MCP server (requires restart)"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "vite build",
+    "test": "vitest run --coverage",
+    "test:watch": "vitest watch --coverage",
+    "watch": "vite build --watch"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "yaml": "^2.7.0"
+  },
+  "devDependencies": {
+    "@podman-desktop/api": "workspace:*",
+    "vite": "^7.3.1",
+    "vitest": "^4.0.10"
+  }
+}
