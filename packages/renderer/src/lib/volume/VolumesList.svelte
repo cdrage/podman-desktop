@@ -13,7 +13,6 @@ import {
 import moment from 'moment';
 import { onDestroy, onMount } from 'svelte';
 import type { Unsubscriber } from 'svelte/store';
-import { router } from 'tinro';
 
 import { withBulkConfirmation } from '/@/lib/actions/BulkActions';
 import type { EngineInfoUI } from '/@/lib/engine/EngineInfoUI';
@@ -25,6 +24,7 @@ import EnvironmentDropdown from '/@/lib/ui/EnvironmentDropdown.svelte';
 import { providerInfos } from '/@/stores/providers';
 import { fetchVolumesWithData, filtered, searchPattern, volumeListInfos } from '/@/stores/volumes';
 
+import CreateVolumeModal from './CreateVolumeModal.svelte';
 import { VolumeUtils } from './volume-utils';
 import VolumeColumnActions from './VolumeColumnActions.svelte';
 import VolumeColumnName from './VolumeColumnName.svelte';
@@ -32,20 +32,29 @@ import VolumeColumnStatus from './VolumeColumnStatus.svelte';
 import VolumeEmptyScreen from './VolumeEmptyScreen.svelte';
 import type { VolumeInfoUI } from './VolumeInfoUI';
 
-export let searchTerm = '';
-$: searchPattern.set(searchTerm);
+interface Props {
+  searchTerm?: string;
+}
 
-let selectedEnvironment = '';
-let volumes: VolumeInfoUI[] = [];
+let { searchTerm = $bindable('') }: Props = $props();
+$effect(() => {
+  searchPattern.set(searchTerm);
+});
+
+let selectedEnvironment = $state('');
+let volumes = $state<VolumeInfoUI[]>([]);
 let enginesList: EngineInfoUI[];
+let showCreateVolumeModal = $state(false);
 
 // Filter volumes by selected environment
-$: filteredVolumes = selectedEnvironment ? volumes.filter(v => v.engineId === selectedEnvironment) : volumes;
+let filteredVolumes = $derived(selectedEnvironment ? volumes.filter(v => v.engineId === selectedEnvironment) : volumes);
 
-$: providerConnections = $providerInfos
-  .map(provider => provider.containerConnections)
-  .flat()
-  .filter(providerContainerConnection => providerContainerConnection.status === 'started');
+let providerConnections = $derived(
+  $providerInfos
+    .map(provider => provider.containerConnections)
+    .flat()
+    .filter(providerContainerConnection => providerContainerConnection.status === 'started'),
+);
 
 const volumeUtils = new VolumeUtils();
 
@@ -128,8 +137,12 @@ async function fetchUsageData(): Promise<void> {
   }
 }
 
-function gotoCreateVolume(): void {
-  router.goto('/volumes/create');
+function toggleCreateVolumeModal(): void {
+  showCreateVolumeModal = true;
+}
+
+function closeCreateVolumeModal(): void {
+  showCreateVolumeModal = false;
 }
 
 let selectedItemsNumber: number;
@@ -207,7 +220,7 @@ function label(obj: VolumeInfoUI): string {
         aria-label="Gather volume sizes">Gather volume sizes</Button>
     {/if}
     {#if providerConnections.length > 0}
-      <Button on:click={gotoCreateVolume} icon={faPlusCircle} title="Create a volume" aria-label="Create"
+      <Button on:click={toggleCreateVolumeModal} icon={faPlusCircle} title="Create a volume" aria-label="Create"
         >Create</Button>
     {/if}
   {/snippet}
@@ -258,3 +271,7 @@ function label(obj: VolumeInfoUI): string {
   </div>
   {/snippet}
 </NavPage>
+
+{#if showCreateVolumeModal}
+  <CreateVolumeModal onClose={closeCreateVolumeModal} />
+{/if}
