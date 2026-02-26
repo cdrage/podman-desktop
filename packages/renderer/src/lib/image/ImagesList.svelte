@@ -37,7 +37,9 @@ import ImageColumnName from './ImageColumnName.svelte';
 import ImageColumnStatus from './ImageColumnStatus.svelte';
 import ImageEmptyScreen from './ImageEmptyScreen.svelte';
 import type { ImageInfoUI } from './ImageInfoUI';
+import ImportImageModal from './ImportImageModal.svelte';
 import NoContainerEngineEmptyScreen from './NoContainerEngineEmptyScreen.svelte';
+import PullImageModal from './PullImageModal.svelte';
 
 interface Props {
   searchTerm?: string;
@@ -51,6 +53,8 @@ $effect(() => {
 
 let selectedEnvironment = $state('');
 let images: ImageInfoUI[] = $state([]);
+let showImportImageModal = $state(false);
+let showPullImageModal = $state(false);
 
 // Filter images by selected environment
 let filteredImages = $derived.by(() => {
@@ -183,11 +187,11 @@ function gotoBuildImage(): void {
 }
 
 function gotoPullImage(): void {
-  router.goto('/images/pull');
+  showPullImageModal = true;
 }
 
 function importImage(): void {
-  router.goto('/images/import');
+  showImportImageModal = true;
 }
 
 function loadImages(): void {
@@ -303,6 +307,14 @@ function label(item: ImageInfoUI): string {
   return item.name;
 }
 </script>
+
+{#if showImportImageModal}
+  <ImportImageModal closeCallback={(): void => { showImportImageModal = false; }} />
+{/if}
+
+{#if showPullImageModal}
+  <PullImageModal closeCallback={(): void => { showPullImageModal = false; }} />
+{/if}
 
 <NavPage bind:searchTerm={searchTerm} title="images">
   {#snippet additionalActions()}
