@@ -33,6 +33,7 @@ import { viewsContributions } from '/@/stores/views';
 
 import { ImageUtils } from './image-utils';
 import ImageColumnActions from './ImageColumnActions.svelte';
+import LoadImagesModal from './LoadImagesModal.svelte';
 import ImageColumnName from './ImageColumnName.svelte';
 import ImageColumnStatus from './ImageColumnStatus.svelte';
 import ImageEmptyScreen from './ImageEmptyScreen.svelte';
@@ -190,8 +191,14 @@ function importImage(): void {
   router.goto('/images/import');
 }
 
-function loadImages(): void {
-  router.goto('/images/load');
+let showLoadImagesModal = $state(false);
+
+function toggleLoadImagesModal(): void {
+  showLoadImagesModal = true;
+}
+
+function closeLoadImagesModal(): void {
+  showLoadImagesModal = false;
 }
 
 // delete the items selected in the list
@@ -310,7 +317,7 @@ function label(item: ImageInfoUI): string {
       <Prune type="images" engines={enginesList} />
     {/if}
     <Button
-      on:click={loadImages}
+      on:click={toggleLoadImagesModal}
       title="Load Images From Tar Archives"
       icon={faUpload}
       aria-label="Load Images">
@@ -378,3 +385,7 @@ function label(item: ImageInfoUI): string {
   </div>
   {/snippet}
 </NavPage>
+
+{#if showLoadImagesModal}
+  <LoadImagesModal onClose={closeLoadImagesModal} />
+{/if}
