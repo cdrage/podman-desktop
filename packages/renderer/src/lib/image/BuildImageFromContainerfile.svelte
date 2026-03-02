@@ -11,6 +11,7 @@ import { get, type Unsubscriber } from 'svelte/store';
 
 import ContainerConnectionDropdown from '/@/lib/forms/ContainerConnectionDropdown.svelte';
 import EngineFormPage from '/@/lib/ui/EngineFormPage.svelte';
+import ProgressBar from '/@/lib/task-manager/ProgressBar.svelte';
 import FileInput from '/@/lib/ui/FileInput.svelte';
 import TerminalWindow from '/@/lib/ui/TerminalWindow.svelte';
 import { handleNavigation } from '/@/navigation';
@@ -62,9 +63,16 @@ function deleteBuildArg(index: number): void {
 
 function getTerminalCallback(): BuildImageCallback {
   const imageRegexp = RegExp(/docker:\/\/(?<imageName>.*?):\s/);
+  const stepRegexp = /^step (\d+)\/(\d+)\s*:\s*(.*)$/im;
   return {
     onStream: function (data: string = ''): void {
       buildImageInfo.logsTerminal?.write(`${data}\r`);
+      const stepMatch = stepRegexp.exec(data.trim());
+      if (stepMatch) {
+        buildCurrentStep = parseInt(stepMatch[1], 10);
+        buildTotalSteps = parseInt(stepMatch[2], 10);
+        buildCurrentInstruction = stepMatch[3].trim();
+      }
     },
     onError: function (error: string): void {
       buildImageInfo.buildError = error;
@@ -90,6 +98,10 @@ async function buildContainerImage(): Promise<void> {
   buildImageInfo.buildParentImageName = undefined;
   buildImageInfo.buildError = undefined;
   buildImageInfo.logsTerminal?.reset();
+  buildCurrentStep = 0;
+  buildTotalSteps = 0;
+  buildCurrentInstruction = '';
+  showBuildLogs = false;
 
   // Create the formatted build arguments that will be used when passing to buildImage
   formattedBuildArgs = buildImageInfo.buildArgs.reduce<Record<string, string>>((acc, { key, value }) => {
@@ -288,6 +300,17 @@ async function abortBuild(): Promise<void> {
 
 let platforms = $derived(buildImageInfo.containerBuildPlatform ? buildImageInfo.containerBuildPlatform.split(',') : []);
 
+let showBuildOutput = $derived(!!buildImageInfo.buildImageKey);
+let showBuildLogs = $state(false);
+let buildCurrentStep = $state(0);
+let buildTotalSteps = $state(0);
+let buildCurrentInstruction = $state('');
+$effect(() => {
+  if (buildImageInfo.buildRunning) {
+    showBuildLogs = false;
+  }
+});
+
 let providerConnections = $derived(
   $providerInfos.reduce<ProviderContainerConnectionInfo[]>((acc, provider) => {
     const startedConnections = provider.containerConnections.filter(connection => connection.status === 'started');
@@ -352,7 +375,7 @@ let hasInvalidFields = $derived(
   {/snippet}
   {#snippet content()}
     <div class="space-y-6">
-      <div hidden={buildImageInfo.buildRunning}>
+      <div>
         <label for="containerFilePath" class="block mb-2 font-semibold text-[var(--pd-content-card-header-text)]"
           >Containerfile path</label>
         <FileInput
@@ -364,7 +387,7 @@ let hasInvalidFields = $derived(
           class="w-full" />
       </div>
 
-      <div hidden={buildImageInfo.buildRunning}>
+      <div>
         <label
           for="containerBuildContextDirectory"
           class="block mb-2 font-semibold text-[var(--pd-content-card-header-text)]">Build context directory</label>
@@ -377,7 +400,7 @@ let hasInvalidFields = $derived(
           class="w-full" />
       </div>
 
-      <div hidden={buildImageInfo.buildRunning}>
+      <div>
         <label for="containerImageName" class="block mb-2 font-semibold text-[var(--pd-content-card-header-text)]"
           >Image name</label>
         <Input
@@ -390,13 +413,13 @@ let hasInvalidFields = $derived(
       </div>
 
       {#if buildImageInfo.containerFilePath}
-        <div hidden={buildImageInfo.buildRunning}>
-            <BuildTargetDropdown bind:target={buildImageInfo.target} containerFilePath={buildImageInfo.containerFilePath} />
+        <div>
+          <BuildTargetDropdown bind:target={buildImageInfo.target} containerFilePath={buildImageInfo.containerFilePath} />
         </div>
       {/if}
 
       {#if providerConnections.length > 1}
-        <div hidden={buildImageInfo.buildRunning}>
+        <div>
           <label for="providerChoice" class="block mb-2 font-semibold text-[var(--pd-content-card-header-text)]"
             >Container engine</label>
           <ContainerConnectionDropdown
@@ -407,7 +430,7 @@ let hasInvalidFields = $derived(
         </div>
       {/if}
 
-      <div hidden={buildImageInfo.buildRunning}>
+      <div>
         <label for="inputKey" class="block mb-2 font-semibold text-[var(--pd-content-card-header-text)]"
           >Build arguments</label>
         {#each buildImageInfo.buildArgs as buildArg, index (index)}
@@ -424,7 +447,7 @@ let hasInvalidFields = $derived(
         {/each}
       </div>
 
-      <div hidden={buildImageInfo.buildRunning}>
+      <div>
         <label for="containerBuildPlatform" class="block mb-2 font-semibold text-[var(--pd-content-card-header-text)]"
           >Platform</label>
         {#if platforms.length > 1}
@@ -447,12 +470,54 @@ let hasInvalidFields = $derived(
         bind:imageError={buildImageInfo.buildError}
         imageName={buildImageInfo.buildParentImageName} />
 
-      <TerminalWindow on:init={onInit} bind:terminal={buildImageInfo.logsTerminal} />
-      <div class="w-full">
-        {#if buildImageInfo.buildRunning}
-          <Button on:click={abortBuild} class="w-full">Cancel</Button>
-        {/if}
-      </div>
+      {#if showBuildOutput}
+        <div class="w-full space-y-3">
+          {#if buildImageInfo.buildRunning}
+            {#if buildTotalSteps > 0}
+              <div class="flex items-center justify-between text-sm">
+                <span class="font-medium text-[var(--pd-content-card-header-text)]">Step {buildCurrentStep} / {buildTotalSteps}</span>
+                {#if buildCurrentInstruction}
+                  <span class="text-[var(--pd-content-text)] font-mono text-xs truncate max-w-xs ml-4" title={buildCurrentInstruction}>{buildCurrentInstruction}</span>
+                {/if}
+              </div>
+              <ProgressBar progress={Math.round((buildCurrentStep / buildTotalSteps) * 100)} width="w-full" />
+            {:else}
+              <div class="flex items-center gap-x-2 text-sm text-[var(--pd-content-card-header-text)]">
+                <i class="fas fa-circle-notch fa-spin text-purple-400" aria-hidden="true"></i>
+                <span>Initializing build...</span>
+              </div>
+              <ProgressBar width="w-full" />
+            {/if}
+          {:else if buildImageInfo.buildFinished}
+            <div class="flex items-center gap-x-2 text-sm">
+              {#if buildImageInfo.buildError}
+                <i class="fas fa-exclamation-circle text-red-500" aria-hidden="true"></i>
+                <span class="text-red-500">Build failed</span>
+              {:else}
+                <i class="fas fa-check-circle text-green-500" aria-hidden="true"></i>
+                <span class="text-green-500">Build complete</span>
+                {#if buildTotalSteps > 0}
+                  <span class="text-[var(--pd-content-text)] text-xs">({buildTotalSteps} steps)</span>
+                {/if}
+              {/if}
+            </div>
+          {/if}
+
+          <button
+            class="text-sm text-[var(--pd-link)] hover:underline cursor-pointer"
+            onclick={() => (showBuildLogs = !showBuildLogs)}>
+            {showBuildLogs ? 'Hide logs' : 'View logs'}
+          </button>
+
+          <div class:hidden={!showBuildLogs}>
+            <TerminalWindow on:init={onInit} bind:terminal={buildImageInfo.logsTerminal} />
+          </div>
+
+          {#if buildImageInfo.buildRunning}
+            <Button on:click={abortBuild} class="w-full">Cancel</Button>
+          {/if}
+        </div>
+      {/if}
     </div>
   {/snippet}
 </EngineFormPage>
