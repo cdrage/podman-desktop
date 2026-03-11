@@ -227,6 +227,12 @@
           "description": "Use macOS Rosetta to run x86_64 Linux binaries on Podman 5.1.0 and above, disabling will use qemu. NOTE: This setting is only applied when creating new machines.",
           "when": "isMac"
         },
+        "podman.engine.allowUpdate": {
+          "type": "boolean",
+          "default": true,
+          "description": "Allow Podman engine updates. When disabled, the update button will not appear when a new version is detected. (restart required)",
+          "group": "podman-desktop.podman"
+        },
         "third-party.docker.tool.compatibility.enabled": {
           "type": "boolean",
           "default": true,
