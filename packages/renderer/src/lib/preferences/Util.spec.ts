@@ -17,7 +17,7 @@
  ***********************************************************************/
 
 import type { IConfigurationPropertyRecordedSchema } from '@podman-desktop/core-api/configuration';
-import type { Terminal } from '@xterm/xterm';
+import type { Terminal } from 'ghostty-web';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import { ContextUI } from '/@/lib/context/context';

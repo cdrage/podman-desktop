@@ -24,12 +24,15 @@ import type {
   ProviderKubernetesConnectionInfo,
 } from '@podman-desktop/core-api';
 import { render, screen, waitFor } from '@testing-library/svelte';
+import { Terminal } from 'ghostty-web';
 import { get } from 'svelte/store';
 import { beforeEach, expect, test, vi } from 'vitest';
 
 import { providerTerminals } from '/@/stores/provider-terminal-store';
 
 import PreferencesConnectionDetailsTerminal from './PreferencesConnectionDetailsTerminal.svelte';
+
+vi.mock('../terminal/ghostty-serialize-addon');
 
 const getConfigurationValueMock = vi.fn();
 const shellInProviderConnectionMock = vi.fn();
@@ -97,7 +100,7 @@ test('expect being able to reconnect ', async () => {
   );
 
   // render the component with a terminal
-  let renderObject = render(PreferencesConnectionDetailsTerminal, { provider, connectionInfo, screenReaderMode: true });
+  const renderObject = render(PreferencesConnectionDetailsTerminal, { provider, connectionInfo });
 
   // wait shellInProviderMock is called
   await waitFor(() => expect(shellInProviderConnectionMock).toHaveBeenCalled());
@@ -105,11 +108,8 @@ test('expect being able to reconnect ', async () => {
   // write some data on the terminal
   onDataCallback('hello\nworld');
 
-  // search a div having aria-live="assertive" attribute
-  const terminalLinesLiveRegion = renderObject.container.querySelector('div[aria-live="assertive"]');
-
-  // check the content
-  await waitFor(() => expect(terminalLinesLiveRegion).toHaveTextContent('hello world'));
+  // check the terminal received the data
+  await waitFor(() => expect(Terminal.prototype.write).toHaveBeenCalledWith('hello\nworld'));
 
   // should be no terminal being stored
   const terminals = get(providerTerminals);
@@ -123,15 +123,10 @@ test('expect being able to reconnect ', async () => {
   expect(terminalsAfterDestroy.length).toBe(1);
 
   // ok, now render a new terminal widget, it should reuse data from the store
-  renderObject = render(PreferencesConnectionDetailsTerminal, { provider, connectionInfo, screenReaderMode: true });
+  render(PreferencesConnectionDetailsTerminal, { provider, connectionInfo });
 
   // wait shellInProviderMock is called
   await waitFor(() => expect(shellInProviderConnectionMock).toHaveBeenCalledTimes(2));
-
-  const terminalLinesLiveRegion2 = renderObject.container.querySelector('div[aria-live="assertive"]');
-
-  // check the content
-  await waitFor(() => expect(terminalLinesLiveRegion2).toHaveTextContent('hello world'));
 
   // creating a new terminal requires new shellInProvider call
   expect(shellInProviderConnectionMock).toHaveBeenCalledTimes(2);
@@ -178,7 +173,6 @@ test('terminal active/ restarts connection after stopping and starting a provide
   const renderObject = render(PreferencesConnectionDetailsTerminal, {
     provider,
     connectionInfo,
-    screenReaderMode: true,
   });
 
   // wait shellInProviderMock is called
@@ -190,13 +184,8 @@ test('terminal active/ restarts connection after stopping and starting a provide
   // write some data on the terminal
   onDataCallback('hello\nworld');
 
-  await waitFor(() => renderObject.container.querySelector('div[aria-live="assertive"]'));
-
-  // search a div having aria-live="assertive" attribute
-  const terminalLinesLiveRegion = renderObject.container.querySelector('div[aria-live="assertive"]');
-
-  // check the content
-  await waitFor(() => expect(terminalLinesLiveRegion).toHaveTextContent('hello world'));
+  // check the terminal received the data
+  await waitFor(() => expect(Terminal.prototype.write).toHaveBeenCalledWith('hello\nworld'));
 
   connectionInfo.status = 'stopped';
 
@@ -207,17 +196,17 @@ test('terminal active/ restarts connection after stopping and starting a provide
     expect(shellInProviderConnectionCloseMock).toHaveBeenCalledTimes(1);
   });
 
-  await renderObject.rerender({ provider, connectionInfo, screenReaderMode: true });
+  await renderObject.rerender({ provider, connectionInfo });
 
   await waitFor(() => expect(screen.queryByText('Provider engine is not running')).toBeInTheDocument());
 
   connectionInfo.status = 'starting';
 
-  await renderObject.rerender({ provider, connectionInfo, screenReaderMode: true });
+  await renderObject.rerender({ provider, connectionInfo });
 
   connectionInfo.status = 'started';
 
-  await renderObject.rerender({ provider, connectionInfo, screenReaderMode: true });
+  await renderObject.rerender({ provider, connectionInfo });
 
   await waitFor(
     () => {

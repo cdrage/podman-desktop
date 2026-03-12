@@ -1,16 +1,13 @@
 <script lang="ts">
-import '@xterm/xterm/css/xterm.css';
-
 import type { ProviderConnectionShellDimensions, ProviderConnectionStatus } from '@podman-desktop/api';
 import type { ProviderContainerConnectionInfo, ProviderInfo, ProviderVmConnectionInfo } from '@podman-desktop/core-api';
 import { TerminalSettings } from '@podman-desktop/core-api/terminal';
 import { EmptyScreen } from '@podman-desktop/ui-svelte';
-import { FitAddon } from '@xterm/addon-fit';
-import { SerializeAddon } from '@xterm/addon-serialize';
-import { Terminal } from '@xterm/xterm';
-import type { IDisposable } from 'monaco-editor';
+import { FitAddon, type IDisposable, Terminal } from 'ghostty-web';
 import { onDestroy, onMount } from 'svelte';
 
+import { ensureGhosttyInit } from '/@/lib/terminal/ghostty-init';
+import { SerializeAddon } from '/@/lib/terminal/ghostty-serialize-addon';
 import { getTerminalTheme } from '/@/lib/terminal/terminal-theme';
 import NoLogIcon from '/@/lib/ui/NoLogIcon.svelte';
 import { getExistingTerminal, registerTerminal } from '/@/stores/provider-terminal-store';
@@ -18,10 +15,9 @@ import { getExistingTerminal, registerTerminal } from '/@/stores/provider-termin
 interface ProviderDetailsTerminalProps {
   provider: ProviderInfo;
   connectionInfo: ProviderContainerConnectionInfo | ProviderVmConnectionInfo;
-  screenReaderMode?: boolean;
 }
 
-let { provider, connectionInfo, screenReaderMode = false }: ProviderDetailsTerminalProps = $props();
+let { provider, connectionInfo }: ProviderDetailsTerminalProps = $props();
 let terminalXtermDiv: HTMLDivElement;
 let shellTerminal: Terminal;
 let sendCallbackId: number | undefined;
@@ -109,8 +105,10 @@ async function executeShellIntoProviderConnection(): Promise<void> {
   // disposes of the old callbackId onData listener
   terminalOnDataListener?.dispose();
   // pass data from xterm to provider
-  terminalOnDataListener = shellTerminal?.onData(async (data: string) => {
-    await window.shellInProviderConnectionSend(callbackId, data);
+  terminalOnDataListener = shellTerminal?.onData((data: string) => {
+    window
+      .shellInProviderConnectionSend(callbackId, data)
+      .catch((err: unknown) => console.error('Error sending data to provider', err));
   });
   // store it
   sendCallbackId = callbackId;
@@ -122,14 +120,11 @@ async function refreshTerminal(): Promise<void> {
   if (!terminalXtermDiv) {
     return;
   }
+  await ensureGhosttyInit();
 
   // grab font size
   const fontSize = await window.getConfigurationValue<number>(
     TerminalSettings.SectionName + '.' + TerminalSettings.FontSize,
-  );
-
-  const lineHeight = await window.getConfigurationValue<number>(
-    TerminalSettings.SectionName + '.' + TerminalSettings.LineHeight,
   );
 
   const scrollback = await window.getConfigurationValue<number>(
@@ -140,25 +135,20 @@ async function refreshTerminal(): Promise<void> {
   const existingTerminal = getExistingTerminal(provider.internalId, connectionInfo.name);
   shellTerminal = new Terminal({
     fontSize,
-    lineHeight,
-    screenReaderMode,
     theme: getTerminalTheme(),
     scrollback,
   });
 
-  if (existingTerminal) {
-    shellTerminal.options = {
-      fontSize,
-      lineHeight,
-    };
-    shellTerminal.write(existingTerminal.terminal);
-  }
-
   const fitAddon = new FitAddon();
   serializeAddon = new SerializeAddon();
+
+  shellTerminal.open(terminalXtermDiv);
   shellTerminal.loadAddon(fitAddon);
   shellTerminal.loadAddon(serializeAddon);
-  shellTerminal.open(terminalXtermDiv);
+
+  if (existingTerminal) {
+    shellTerminal.write(existingTerminal.terminal);
+  }
 
   // call fit addon each time we resize the window
   window.addEventListener('resize', () => {
@@ -182,7 +172,7 @@ onMount(async () => {
 });
 
 onDestroy(async () => {
-  terminalContent = serializeAddon.serialize();
+  terminalContent = serializeAddon?.serialize() ?? '';
   // register terminal for reusing it
   registerTerminal({
     providerInternalId: provider.internalId,

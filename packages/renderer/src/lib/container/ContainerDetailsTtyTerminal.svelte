@@ -1,8 +1,6 @@
 <script lang="ts">
-import '@xterm/xterm/css/xterm.css';
-
 import { EmptyScreen } from '@podman-desktop/ui-svelte';
-import type { Terminal } from '@xterm/xterm';
+import type { Terminal } from 'ghostty-web';
 import { onMount } from 'svelte';
 
 import NoLogIcon from '/@/lib/ui/NoLogIcon.svelte';
@@ -11,7 +9,6 @@ import TerminalWindow from '/@/lib/ui/TerminalWindow.svelte';
 import type { ContainerInfoUI } from './ContainerInfoUI';
 
 export let container: ContainerInfoUI;
-export let screenReaderMode = false;
 let attachContainerTerminal: Terminal;
 let closed = false;
 let callbackId: number;
@@ -62,8 +59,10 @@ async function attachToContainer(): Promise<void> {
   );
 
   // pass data from xterm to container
-  attachContainerTerminal?.onData(async data => {
-    await window.attachContainerSend(callbackId, data);
+  attachContainerTerminal?.onData(data => {
+    window
+      .attachContainerSend(callbackId, data)
+      .catch((err: unknown) => console.log(`Error sending data to container ${container.id}`, err));
   });
 }
 
@@ -73,7 +72,7 @@ onMount(async () => {
 </script>
 
 <div class="h-full" class:hidden={container.state !== 'RUNNING'}>
-  <TerminalWindow class="h-full" bind:terminal={attachContainerTerminal} screenReaderMode={screenReaderMode} disableStdIn={false} showCursor={true} />
+  <TerminalWindow class="h-full" bind:terminal={attachContainerTerminal} disableStdIn={false} showCursor={true} />
 </div>
 
 <EmptyScreen

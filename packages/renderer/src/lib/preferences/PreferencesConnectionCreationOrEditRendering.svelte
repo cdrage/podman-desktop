@@ -8,7 +8,7 @@ import type {
 } from '@podman-desktop/core-api';
 import type { IConfigurationPropertyRecordedSchema } from '@podman-desktop/core-api/configuration';
 import { Button, EmptyScreen, ErrorMessage, Spinner } from '@podman-desktop/ui-svelte';
-import type { Terminal } from '@xterm/xterm';
+import type { Terminal } from 'ghostty-web';
 import { onDestroy, onMount } from 'svelte';
 /* eslint-disable import/no-duplicates */
 // https://github.com/import-js/eslint-plugin-import/issues/1479

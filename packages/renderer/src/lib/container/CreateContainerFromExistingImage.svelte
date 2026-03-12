@@ -8,7 +8,7 @@ import type {
 } from '@podman-desktop/core-api';
 import { Button, Checkbox, ErrorMessage, Tooltip } from '@podman-desktop/ui-svelte';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
-import type { Terminal } from '@xterm/xterm';
+import type { Terminal } from 'ghostty-web';
 import { onMount, tick } from 'svelte';
 import { SvelteMap } from 'svelte/reactivity';
 import { router } from 'tinro';

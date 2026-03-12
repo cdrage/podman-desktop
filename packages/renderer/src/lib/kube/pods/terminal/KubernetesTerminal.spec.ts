@@ -19,6 +19,7 @@
 import '@testing-library/jest-dom/vitest';
 
 import { render, waitFor } from '@testing-library/svelte';
+import { Terminal } from 'ghostty-web';
 /* eslint-disable import/no-duplicates */
 import { tick } from 'svelte';
 import { get } from 'svelte/store';
@@ -67,10 +68,8 @@ test('Test should render the terminal and being able to reconnect', async () => 
 
   onStdOutCallback(Buffer.from('hello\nworld'));
 
-  await waitFor(() => {
-    const terminalLinesLiveRegion = renderObject.container.querySelector('div[aria-live="assertive"]');
-    expect(terminalLinesLiveRegion).toHaveTextContent('hello world');
-  });
+  // check the terminal received the data
+  await waitFor(() => expect(Terminal.prototype.write).toHaveBeenCalledWith(Buffer.from('hello\nworld')));
 
   const terminals = get(terminalStates);
   expect(terminals.size).toBe(0);

@@ -19,14 +19,13 @@
 import '@testing-library/jest-dom/vitest';
 
 import { render } from '@testing-library/svelte';
-import { SearchAddon } from '@xterm/addon-search';
 import { beforeEach, expect, test, vi } from 'vitest';
 
 import PodDetailsLogs from '/@/lib/pod/PodDetailsLogs.svelte';
 import type { PodInfoUI } from '/@/lib/pod/PodInfoUI';
+import { SearchAddon } from '/@/lib/terminal/ghostty-search-addon';
 
-vi.mock(import('@xterm/xterm'));
-vi.mock(import('@xterm/addon-search'));
+vi.mock('/@/lib/terminal/ghostty-search-addon');
 
 beforeEach(() => {
   vi.resetAllMocks();

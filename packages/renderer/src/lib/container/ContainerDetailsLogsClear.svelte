@@ -1,7 +1,7 @@
 <script lang="ts">
 import { faEraser } from '@fortawesome/free-solid-svg-icons';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
-import type { Terminal } from '@xterm/xterm';
+import type { Terminal } from 'ghostty-web';
 import { SvelteDate } from 'svelte/reactivity';
 
 import { isMultiplexedLog } from '/@/lib/stream/stream-utils';

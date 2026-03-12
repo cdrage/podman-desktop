@@ -194,8 +194,7 @@ function setNoLogs(): void {
             <Route path="/terminal" breadcrumb="Terminal" navigationHint="tab">
               <PreferencesConnectionDetailsTerminal
                 provider={providerInfo}
-                connectionInfo={connectionInfo}
-                screenReaderMode={true} />
+                connectionInfo={connectionInfo} />
             </Route>
           {/if}
         </div>

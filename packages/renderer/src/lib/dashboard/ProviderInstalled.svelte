@@ -1,13 +1,11 @@
 <script lang="ts">
-import '@xterm/xterm/css/xterm.css';
-
 import type { CheckStatus, ProviderInfo } from '@podman-desktop/core-api';
 import { TerminalSettings } from '@podman-desktop/core-api/terminal';
 import { Spinner } from '@podman-desktop/ui-svelte';
-import { FitAddon } from '@xterm/addon-fit';
-import { Terminal } from '@xterm/xterm';
+import { FitAddon, Terminal } from 'ghostty-web';
 import { onDestroy, onMount } from 'svelte';
 
+import { ensureGhosttyInit } from '/@/lib/terminal/ghostty-init';
 import { getTerminalTheme } from '/@/lib/terminal/terminal-theme';
 import Steps from '/@/lib/ui/Steps.svelte';
 
@@ -71,30 +69,28 @@ async function refreshTerminal(): Promise<void> {
     console.log('missing xterm div, exiting...');
     return;
   }
+  await ensureGhosttyInit();
   // grab font size
   const fontSize = await window.getConfigurationValue<number>(
     TerminalSettings.SectionName + '.' + TerminalSettings.FontSize,
   );
-  const lineHeight = await window.getConfigurationValue<number>(
-    TerminalSettings.SectionName + '.' + TerminalSettings.LineHeight,
-  );
-
   const scrollback = await window.getConfigurationValue<number>(
     TerminalSettings.SectionName + '.' + TerminalSettings.Scrollback,
   );
 
   logsTerminal = new Terminal({
     fontSize,
-    lineHeight,
     disableStdin: true,
     theme: getTerminalTheme(),
     convertEol: true,
     scrollback,
   });
+
+  logsTerminal.open(logsXtermDiv);
+
   termFit = new FitAddon();
   logsTerminal.loadAddon(termFit);
 
-  logsTerminal.open(logsXtermDiv);
   // disable cursor
   logsTerminal.write('\x1b[?25l');
 

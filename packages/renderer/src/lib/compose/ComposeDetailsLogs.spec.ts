@@ -27,8 +27,6 @@ import { mockBreadcrumb } from '/@/stores/breadcrumb.spec';
 import ComposeDetailsLogs from './ComposeDetailsLogs.svelte';
 import type { ComposeInfoUI } from './ComposeInfoUI';
 
-vi.mock(import('@xterm/xterm'));
-
 beforeAll(() => {
   Object.defineProperty(window, 'getConfigurationValue', { value: vi.fn() });
   Object.defineProperty(window, 'ResizeObserver', {

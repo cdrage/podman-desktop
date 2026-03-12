@@ -1,6 +1,4 @@
 <script lang="ts">
-import '@xterm/xterm/css/xterm.css';
-
 import type { ContainerInfo } from '@podman-desktop/core-api';
 import { ErrorMessage, Link, StatusIcon, Tab } from '@podman-desktop/ui-svelte';
 import { ContainerIcon } from '@podman-desktop/ui-svelte/icons';
