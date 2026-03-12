@@ -34,8 +34,6 @@ import { operationConnectionsInfo } from '/@/stores/operation-connections';
 
 import PreferencesConnectionCreationOrEditRendering from './PreferencesConnectionCreationOrEditRendering.svelte';
 
-vi.mock(import('@xterm/xterm'));
-
 vi.mock(import('/@/lib/preferences/preferences-connection-rendering-task'), async importOriginal => {
   const original = await importOriginal();
   return {

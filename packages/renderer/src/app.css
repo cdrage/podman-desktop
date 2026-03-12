@@ -24,3 +24,8 @@ a {
 @utility fa-w-* {
   --fa-width: --value([length], [percentage]);
 }
+
+/* Hide the native browser caret on ghostty-web's hidden input textarea */
+textarea[aria-label='Terminal input'] {
+  caret-color: transparent !important;
+}

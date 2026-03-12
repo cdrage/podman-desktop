@@ -1,12 +1,12 @@
 <script lang="ts">
 import { TerminalSettings } from '@podman-desktop/core-api/terminal';
-import { FitAddon } from '@xterm/addon-fit';
-import { SerializeAddon } from '@xterm/addon-serialize';
-import { type IDisposable, Terminal } from '@xterm/xterm';
+import { FitAddon, type IDisposable, Terminal } from 'ghostty-web';
 import { onDestroy, onMount } from 'svelte';
 import { router } from 'tinro';
 
-import { getTerminalTheme } from '/@/lib/terminal/terminal-theme';
+import { ensureGhosttyInit } from '/@/lib/terminal/ghostty-init';
+import { SerializeAddon } from '/@/lib/terminal/ghostty-serialize-addon';
+import { getTerminalTheme, TERMINAL_FONT_FAMILY } from '/@/lib/terminal/terminal-theme';
 import { terminalStates } from '/@/stores/kubernetes-terminal-state-store';
 
 interface Props {
@@ -34,7 +34,6 @@ interface State {
 }
 
 let shellTerminal: Terminal;
-let screenReaderMode = true;
 
 let id: number | undefined;
 let onDataDisposable: IDisposable | undefined;
@@ -56,10 +55,10 @@ onMount(async () => {
 });
 
 onDestroy(() => {
-  terminalContent = serializeAddon.serialize();
+  terminalContent = serializeAddon?.serialize() ?? '';
   saveTerminalState(originalPodName, originalContainerName, { terminal: terminalContent, id: id } as State);
-  serializeAddon.dispose();
-  shellTerminal.dispose();
+  serializeAddon?.dispose();
+  shellTerminal?.dispose();
 });
 
 function reconnect(): void {
@@ -91,25 +90,28 @@ async function initializeNewTerminal(container: HTMLElement): Promise<void> {
   if (!terminalXtermDiv) {
     return;
   }
+  await ensureGhosttyInit();
 
   const fontSize = await window.getConfigurationValue<number>(
     TerminalSettings.SectionName + '.' + TerminalSettings.FontSize,
   );
-  const lineHeight = await window.getConfigurationValue<number>(
-    TerminalSettings.SectionName + '.' + TerminalSettings.LineHeight,
-  );
-
   const scrollback = await window.getConfigurationValue<number>(
     TerminalSettings.SectionName + '.' + TerminalSettings.Scrollback,
   );
 
   shellTerminal = new Terminal({
     fontSize,
-    lineHeight,
-    screenReaderMode,
+    fontFamily: TERMINAL_FONT_FAMILY,
     theme: getTerminalTheme(),
     scrollback,
   });
+
+  const fitAddon = new FitAddon();
+  serializeAddon = new SerializeAddon();
+
+  shellTerminal.open(container);
+  shellTerminal.loadAddon(fitAddon);
+  shellTerminal.loadAddon(serializeAddon);
 
   id = await window.kubernetesExec(
     podName,
@@ -127,12 +129,6 @@ async function initializeNewTerminal(container: HTMLElement): Promise<void> {
   onDataDisposable = shellTerminal.onData(data => {
     window.kubernetesExecSend(id!, data).catch((err: unknown) => console.error('Error sending data', err));
   });
-
-  const fitAddon = new FitAddon();
-  serializeAddon = new SerializeAddon();
-  shellTerminal.loadAddon(fitAddon);
-  shellTerminal.loadAddon(serializeAddon);
-  shellTerminal.open(container);
 
   window.addEventListener('resize', () => {
     const resizeAsync = async (): Promise<void> => {

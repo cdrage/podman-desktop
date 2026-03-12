@@ -2,9 +2,10 @@
 import { faArrowDown, faArrowUp } from '@fortawesome/free-solid-svg-icons';
 import { Input } from '@podman-desktop/ui-svelte';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
-import { SearchAddon } from '@xterm/addon-search';
-import type { Terminal } from '@xterm/xterm';
+import type { Terminal } from 'ghostty-web';
 import { onDestroy, onMount } from 'svelte';
+
+import { SearchAddon } from '/@/lib/terminal/ghostty-search-addon';
 
 interface Props {
   terminal: Terminal;

@@ -19,7 +19,7 @@
 import '@testing-library/jest-dom/vitest';
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
-import { Terminal } from '@xterm/xterm';
+import { Terminal } from 'ghostty-web';
 import { tick } from 'svelte';
 import { get } from 'svelte/store';
 import { beforeEach, expect, test, vi } from 'vitest';
@@ -28,8 +28,6 @@ import { containerLogsClearTimestamps } from '/@/stores/container-logs';
 
 import ContainerDetailsLogsClear from './ContainerDetailsLogsClear.svelte';
 import type { ContainerInfoUI } from './ContainerInfoUI';
-
-vi.mock(import('@xterm/xterm'));
 
 beforeEach(() => {
   vi.clearAllMocks();

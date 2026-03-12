@@ -1,6 +1,4 @@
 <script lang="ts">
-import '@xterm/xterm/css/xterm.css';
-
 import { ErrorMessage, Link, StatusIcon, Tab } from '@podman-desktop/ui-svelte';
 import { ContainerIcon } from '@podman-desktop/ui-svelte/icons';
 import { router } from 'tinro';

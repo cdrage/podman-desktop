@@ -19,6 +19,7 @@
 import '@testing-library/jest-dom/vitest';
 
 import { render, waitFor } from '@testing-library/svelte';
+import { Terminal } from 'ghostty-web';
 import { beforeAll, expect, test, vi } from 'vitest';
 
 import ContainerDetailsTtyTerminal from './ContainerDetailsTtyTerminal.svelte';
@@ -64,22 +65,16 @@ test('expect being able to attach terminal ', async () => {
   );
 
   // render the component with a terminal
-  const renderObject = render(ContainerDetailsTtyTerminal, { container, screenReaderMode: true });
+  render(ContainerDetailsTtyTerminal, { container });
 
   // wait attachContainerMock is called
   await waitFor(() => expect(attachContainerMock).toHaveBeenCalled());
 
-  await new Promise(resolve => setTimeout(resolve, 1000));
-
   // write some data on the terminal
   onDataCallback(Buffer.from('hello\nworld'));
 
-  // search a div having aria-live="assertive" attribute
-  await waitFor(() => expect(renderObject.container.querySelector('div[aria-live="assertive"]')));
-  const terminalLinesLiveRegion = renderObject.container.querySelector('div[aria-live="assertive"]');
-
-  // check the content
-  await vi.waitFor(() => expect(terminalLinesLiveRegion).toHaveTextContent('hello world'), { timeout: 2500 });
+  // check the terminal received the data
+  await waitFor(() => expect(Terminal.prototype.write).toHaveBeenCalledWith('hello\nworld'));
 
   // check we have called attachContainer
   expect(attachContainerMock).toHaveBeenCalledTimes(1);

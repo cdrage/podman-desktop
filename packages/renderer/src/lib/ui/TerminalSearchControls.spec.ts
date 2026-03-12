@@ -20,13 +20,14 @@ import '@testing-library/jest-dom/vitest';
 
 import { fireEvent, render } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
-import { SearchAddon } from '@xterm/addon-search';
-import type { Terminal } from '@xterm/xterm';
+import type { Terminal } from 'ghostty-web';
 import { beforeEach, expect, test, vi } from 'vitest';
+
+import { SearchAddon } from '/@/lib/terminal/ghostty-search-addon';
 
 import TerminalSearchControls from './TerminalSearchControls.svelte';
 
-vi.mock(import('@xterm/addon-search'));
+vi.mock(import('/@/lib/terminal/ghostty-search-addon'));
 
 const TerminalMock: Terminal = {
   onWriteParsed: vi.fn(),

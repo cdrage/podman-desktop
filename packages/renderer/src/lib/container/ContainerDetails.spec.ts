@@ -103,8 +103,7 @@ const myInfraContainerUI: ContainerInfoUI = {
   groupInfo: { ...myContainerUI.groupInfo, name: 'infra0', id: 'myInfraContainer' },
 };
 
-vi.mock(import('@xterm/xterm'));
-vi.mock(import('@xterm/addon-search'));
+vi.mock(import('../terminal/ghostty-search-addon'));
 vi.mock(import('/@/stores/navigation-history.svelte'), () => ({
   replaceCurrentUrl: (url: string): void => {
     router.goto(url);

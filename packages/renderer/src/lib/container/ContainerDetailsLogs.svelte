@@ -1,8 +1,6 @@
 <script lang="ts">
-import '@xterm/xterm/css/xterm.css';
-
 import { EmptyScreen } from '@podman-desktop/ui-svelte';
-import type { Terminal } from '@xterm/xterm';
+import type { Terminal } from 'ghostty-web';
 import { mount, onDestroy, onMount } from 'svelte';
 
 import NoLogIcon from '/@/lib/ui/NoLogIcon.svelte';

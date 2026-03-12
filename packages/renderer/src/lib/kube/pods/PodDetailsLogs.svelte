@@ -1,8 +1,6 @@
 <script lang="ts">
-import '@xterm/xterm/css/xterm.css';
-
 import { EmptyScreen } from '@podman-desktop/ui-svelte';
-import type { Terminal } from '@xterm/xterm';
+import type { Terminal } from 'ghostty-web';
 import { onMount } from 'svelte';
 import { SvelteMap } from 'svelte/reactivity';
 

@@ -4,7 +4,7 @@ import type { ProviderConnectionInfo, ProviderInfo } from '@podman-desktop/core-
 import type { IConfigurationPropertyRecordedSchema } from '@podman-desktop/core-api/configuration';
 import { Button, ErrorMessage, Modal } from '@podman-desktop/ui-svelte';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
-import type { Terminal } from '@xterm/xterm';
+import type { Terminal } from 'ghostty-web';
 import { onMount } from 'svelte';
 import { router } from 'tinro';
 
