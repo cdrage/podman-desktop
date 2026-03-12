@@ -29,8 +29,7 @@ import { podsInfos } from '/@/stores/pods';
 
 import PodDetails from './PodDetails.svelte';
 
-vi.mock(import('@xterm/xterm'));
-vi.mock(import('@xterm/addon-search'));
+vi.mock(import('../terminal/ghostty-search-addon'));
 
 const myPod: PodInfo = {
   Cgroup: '',

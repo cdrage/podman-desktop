@@ -1,14 +1,12 @@
 <script lang="ts">
-import '@xterm/xterm/css/xterm.css';
-
 import type { ProviderContainerConnectionInfo, ProviderKubernetesConnectionInfo } from '@podman-desktop/core-api';
 import { TerminalSettings } from '@podman-desktop/core-api/terminal';
 import { EmptyScreen } from '@podman-desktop/ui-svelte';
-import { FitAddon } from '@xterm/addon-fit';
-import { Terminal } from '@xterm/xterm';
+import { FitAddon, Terminal } from 'ghostty-web';
 import { onDestroy, onMount } from 'svelte';
 
-import { getTerminalTheme } from '/@/lib/terminal/terminal-theme';
+import { ensureGhosttyInit } from '/@/lib/terminal/ghostty-init';
+import { getTerminalTheme, TERMINAL_FONT_FAMILY } from '/@/lib/terminal/terminal-theme';
 import NoLogIcon from '/@/lib/ui/NoLogIcon.svelte';
 
 import { writeToTerminal } from './Util';
@@ -41,10 +39,10 @@ async function refreshTerminal(): Promise<void> {
     return;
   }
 
+  logsTerminal.open(logsXtermDiv);
+
   termFit = new FitAddon();
   logsTerminal.loadAddon(termFit);
-
-  logsTerminal.open(logsXtermDiv);
 
   // disable cursor
   logsTerminal.write('\x1b[?25l');
@@ -53,19 +51,17 @@ async function refreshTerminal(): Promise<void> {
 }
 
 onMount(async () => {
+  await ensureGhosttyInit();
   // grab font size
   const fontSize = await window.getConfigurationValue<number>(
     TerminalSettings.SectionName + '.' + TerminalSettings.FontSize,
-  );
-  const lineHeight = await window.getConfigurationValue<number>(
-    TerminalSettings.SectionName + '.' + TerminalSettings.LineHeight,
   );
   const scrollback = await window.getConfigurationValue<number>(
     TerminalSettings.SectionName + '.' + TerminalSettings.Scrollback,
   );
   logsTerminal = new Terminal({
     fontSize,
-    lineHeight,
+    fontFamily: TERMINAL_FONT_FAMILY,
     disableStdin: true,
     theme: getTerminalTheme(),
     convertEol: true,
@@ -74,7 +70,8 @@ onMount(async () => {
   // Refresh the terminal on initial load
   await refreshTerminal();
 
-  logsTerminal.onLineFeed(() => {
+  // Use onRender as a proxy for onLineFeed (ghostty-web doesn't have onLineFeed)
+  logsTerminal.onRender(() => {
     setNoLogs();
     noLogs = false;
   });

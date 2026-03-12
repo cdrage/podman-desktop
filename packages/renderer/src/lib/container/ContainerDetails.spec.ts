@@ -47,8 +47,7 @@ const myContainer: ContainerInfo = {
   ImageBase64RepoTag: '',
 };
 
-vi.mock(import('@xterm/xterm'));
-vi.mock(import('@xterm/addon-search'));
+vi.mock(import('../terminal/ghostty-search-addon'));
 
 const getConfigurationValueMock = vi.fn().mockReturnValue(12);
 

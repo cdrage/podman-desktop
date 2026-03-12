@@ -34,8 +34,7 @@ import * as states from '/@/stores/kubernetes-contexts-state';
 
 import PodDetails from './PodDetails.svelte';
 
-vi.mock(import('@xterm/xterm'));
-vi.mock(import('@xterm/addon-search'));
+vi.mock(import('../../terminal/ghostty-search-addon'));
 vi.mock(import('/@/stores/kubernetes-contexts-state'));
 
 const myPod: V1Pod = {

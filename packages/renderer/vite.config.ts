@@ -79,6 +79,7 @@ export default defineConfig({
         replacement: `${PACKAGE_ROOT}/../../node_modules/monaco-editor/esm/vs/editor/editor.api`,
       },
       { find: '@floating-ui/dom', replacement: `${PACKAGE_ROOT}/__mocks__/@floating-ui/dom.ts` },
+      { find: 'ghostty-web', replacement: `${PACKAGE_ROOT}/__mocks__/ghostty-web.ts` },
     ],
     server: {
       deps: {

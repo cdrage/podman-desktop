@@ -833,18 +833,6 @@ importers:
       '@typescript-eslint/eslint-plugin':
         specifier: ^8.67.0
         version: 8.67.0(@typescript-eslint/parser@8.67.0(eslint@10.8.1(jiti@2.7.0)(supports-color@8.1.1))(supports-color@8.1.1)(typescript@6.0.3))(eslint@10.8.1(jiti@2.7.0)(supports-color@8.1.1))(supports-color@8.1.1)(typescript@6.0.3)
-      '@xterm/addon-fit':
-        specifier: ^0.11.0
-        version: 0.11.0
-      '@xterm/addon-search':
-        specifier: ^0.16.0
-        version: 0.16.0
-      '@xterm/addon-serialize':
-        specifier: ^0.14.0
-        version: 0.14.0
-      '@xterm/xterm':
-        specifier: ^6.0.0
-        version: 6.0.0
       dompurify:
         specifier: ^3.4.10
         version: 3.4.14
@@ -854,6 +842,9 @@ importers:
       filesize:
         specifier: ^11.0.22
         version: 11.0.22
+      ghostty-web:
+        specifier: github:rcarmo/ghostty-web#v0.9.6
+        version: https://codeload.github.com/rcarmo/ghostty-web/tar.gz/3c98309bd5082894a20098526f0d24fd0da1fc64
       humanize-duration:
         specifier: ^3.34.1
         version: 3.34.1
@@ -5617,18 +5608,6 @@ packages:
     engines: {node: '>=10.0.0'}
     deprecated: this version has critical issues, please update to the latest version
 
-  '@xterm/addon-fit@0.11.0':
-    resolution: {integrity: sha512-jYcgT6xtVYhnhgxh3QgYDnnNMYTcf8ElbxxFzX0IZo+vabQqSPAjC3c1wJrKB5E19VwQei89QCiZZP86DCPF7g==}
-
-  '@xterm/addon-search@0.16.0':
-    resolution: {integrity: sha512-9OeuBFu0/uZJPu+9AHKY6g/w0Czyb/Ut0A5t79I4ULoU4IfU5BEpPFVGQxP4zTTMdfZEYkVIRYbHBX1xWwjeSA==}
-
-  '@xterm/addon-serialize@0.14.0':
-    resolution: {integrity: sha512-uteyTU1EkrQa2Ux6P/uFl2fzmXI46jy5uoQMKEOM0fKTyiW7cSn0WrFenHm5vO5uEXX/GpwW/FgILvv3r0WbkA==}
-
-  '@xterm/xterm@6.0.0':
-    resolution: {integrity: sha512-TQwDdQGtwwDt+2cgKDLn0IRaSxYu1tSUjgKarSDkUM0ZNiSRXFpjxEsvc/Zgc5kq5omJ+V0a8/kIM2WD3sMOYg==}
-
   '@xtuc/ieee754@1.2.0':
     resolution: {integrity: sha512-DX8nKgqcGwsc0eJSqYt5lwP4DH5FlHnmuWWBRy7X0NcaGR0ZtuyeESgMwTYVEtxmsNGY+qit4QYT/MIYTOTPeA==}
 
@@ -7991,6 +7970,10 @@ packages:
 
   getpass@0.1.7:
     resolution: {integrity: sha512-0fzj9JxOLfJ+XGLhR8ze3unN0KZCgZwiSSDz168VERjK8Wl8kVSdcu2kspd4s4wtAa1y/qrVRiAA0WclVsu0ng==}
+
+  ghostty-web@https://codeload.github.com/rcarmo/ghostty-web/tar.gz/3c98309bd5082894a20098526f0d24fd0da1fc64:
+    resolution: {gitHosted: true, integrity: sha512-7woNCqOQxyu1cwmYgft2OgoUmBqBPp1pI/Y8lhpq+OPyq1vjRgecYrWm3M6C0M2UUka02XWrve0eFr8QafWnVQ==, tarball: https://codeload.github.com/rcarmo/ghostty-web/tar.gz/3c98309bd5082894a20098526f0d24fd0da1fc64}
+    version: 0.9.6
 
   github-slugger@1.5.0:
     resolution: {integrity: sha512-wIh+gKBI9Nshz2o46B0B3f5k/W+WI9ZAv6y5Dn5WJ5SK1t0TnDimB4WE5rmTD05ZAIn8HALCZVmCsvj0w0v0lw==}
@@ -18031,14 +18014,6 @@ snapshots:
 
   '@xmldom/xmldom@0.8.13': {}
 
-  '@xterm/addon-fit@0.11.0': {}
-
-  '@xterm/addon-search@0.16.0': {}
-
-  '@xterm/addon-serialize@0.14.0': {}
-
-  '@xterm/xterm@6.0.0': {}
-
   '@xtuc/ieee754@1.2.0': {}
 
   '@xtuc/long@4.2.2': {}
@@ -20778,6 +20753,8 @@ snapshots:
   getpass@0.1.7:
     dependencies:
       assert-plus: 1.0.0
+
+  ghostty-web@https://codeload.github.com/rcarmo/ghostty-web/tar.gz/3c98309bd5082894a20098526f0d24fd0da1fc64: {}
 
   github-slugger@1.5.0: {}
 

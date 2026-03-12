@@ -20,16 +20,13 @@ import '@testing-library/jest-dom/vitest';
 
 import { TerminalSettings } from '@podman-desktop/core-api/terminal';
 import { render } from '@testing-library/svelte';
-import { FitAddon } from '@xterm/addon-fit';
-import { Terminal } from '@xterm/xterm';
+import { FitAddon, Terminal } from 'ghostty-web';
 import { writable } from 'svelte/store';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import TerminalWindow from '/@/lib/ui/TerminalWindow.svelte';
 
-vi.mock(import('@xterm/xterm'));
-vi.mock(import('@xterm/addon-fit'));
-vi.mock(import('@xterm/addon-search'));
+vi.mock(import('/@/lib/terminal/ghostty-search-addon'));
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -61,7 +58,6 @@ test('expect terminal constructor to reflect props', async () => {
     terminal: createTerminalMock(),
     disableStdIn: true,
     convertEol: true,
-    screenReaderMode: true,
   });
 
   await vi.waitFor(() => {
@@ -69,7 +65,6 @@ test('expect terminal constructor to reflect props', async () => {
       expect.objectContaining({
         disableStdin: true,
         convertEol: true,
-        screenReaderMode: true,
       }),
     );
   });
@@ -87,7 +82,7 @@ test('showCursor false or undefined should write specific instruction to termina
   expect(Terminal.prototype.write).toHaveBeenCalledWith('\x1b[?25l');
 });
 
-test('terminal constructor should contains fontSize and lineHeight from configuration', async () => {
+test('terminal constructor should contains fontSize from configuration', async () => {
   vi.mocked(window.getConfigurationValue).mockResolvedValue(10);
 
   render(TerminalWindow, {
@@ -98,16 +93,12 @@ test('terminal constructor should contains fontSize and lineHeight from configur
     expect(Terminal).toHaveBeenCalledWith(
       expect.objectContaining({
         fontSize: 10,
-        lineHeight: 10,
       }),
     );
   });
 
   expect(window.getConfigurationValue).toHaveBeenCalledWith(
     TerminalSettings.SectionName + '.' + TerminalSettings.FontSize,
-  );
-  expect(window.getConfigurationValue).toHaveBeenCalledWith(
-    TerminalSettings.SectionName + '.' + TerminalSettings.LineHeight,
   );
   expect(window.getConfigurationValue).toHaveBeenCalledWith(
     TerminalSettings.SectionName + '.' + TerminalSettings.Scrollback,

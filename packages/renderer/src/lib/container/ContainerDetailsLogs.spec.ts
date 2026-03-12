@@ -19,7 +19,7 @@
 import '@testing-library/jest-dom/vitest';
 
 import { render, screen } from '@testing-library/svelte';
-import { Terminal } from '@xterm/xterm';
+import { Terminal } from 'ghostty-web';
 import { beforeAll, beforeEach, expect, test, vi } from 'vitest';
 
 import { containerLogsClearTimestamps } from '/@/stores/container-logs';
@@ -27,8 +27,7 @@ import { containerLogsClearTimestamps } from '/@/stores/container-logs';
 import ContainerDetailsLogs from './ContainerDetailsLogs.svelte';
 import type { ContainerInfoUI } from './ContainerInfoUI';
 
-vi.mock(import('@xterm/addon-search'));
-vi.mock(import('@xterm/xterm'));
+vi.mock(import('../terminal/ghostty-search-addon'));
 
 beforeAll(() => {
   Object.defineProperty(global, 'window', {

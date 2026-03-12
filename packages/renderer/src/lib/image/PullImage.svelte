@@ -4,7 +4,7 @@ import type { ImageSearchOptions, ProviderContainerConnectionInfo, PullEvent } f
 import { NavigationPage, PreferredRegistriesSettings } from '@podman-desktop/core-api';
 import { Button, Checkbox, ErrorMessage, Link, Tooltip } from '@podman-desktop/ui-svelte';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
-import type { Terminal } from '@xterm/xterm';
+import type { Terminal } from 'ghostty-web';
 import { onMount, tick } from 'svelte';
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 import { router } from 'tinro';

@@ -17,7 +17,7 @@
  ***********************************************************************/
 
 import type { ProviderContainerConnectionInfo } from '@podman-desktop/core-api';
-import type { Terminal } from '@xterm/xterm';
+import type { Terminal } from 'ghostty-web';
 import type { Writable } from 'svelte/store';
 import { writable } from 'svelte/store';
 

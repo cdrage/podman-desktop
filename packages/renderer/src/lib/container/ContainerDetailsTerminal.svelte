@@ -1,16 +1,13 @@
 <script lang="ts">
-import '@xterm/xterm/css/xterm.css';
-
 import { TerminalSettings } from '@podman-desktop/core-api/terminal';
 import { EmptyScreen } from '@podman-desktop/ui-svelte';
-import { FitAddon } from '@xterm/addon-fit';
-import { SerializeAddon } from '@xterm/addon-serialize';
-import type { IDisposable } from '@xterm/xterm';
-import { Terminal } from '@xterm/xterm';
+import { FitAddon, Terminal } from 'ghostty-web';
 import { onDestroy, onMount } from 'svelte';
 import { router } from 'tinro';
 
-import { getTerminalTheme } from '/@/lib/terminal/terminal-theme';
+import { ensureGhosttyInit } from '/@/lib/terminal/ghostty-init';
+import { SerializeAddon } from '/@/lib/terminal/ghostty-serialize-addon';
+import { getTerminalTheme, TERMINAL_FONT_FAMILY } from '/@/lib/terminal/terminal-theme';
 import NoLogIcon from '/@/lib/ui/NoLogIcon.svelte';
 import { getExistingTerminal, registerTerminal } from '/@/stores/container-terminal-store';
 
@@ -18,10 +15,9 @@ import type { ContainerInfoUI } from './ContainerInfoUI';
 
 interface ContainerDetailsTerminalProps {
   container: ContainerInfoUI;
-  screenReaderMode?: boolean;
 }
 
-let { container, screenReaderMode = false }: ContainerDetailsTerminalProps = $props();
+let { container }: ContainerDetailsTerminalProps = $props();
 let terminalXtermDiv: HTMLDivElement;
 let shellTerminal: Terminal;
 let currentRouterPath: string;
@@ -31,7 +27,7 @@ let serializeAddon: SerializeAddon;
 let lastState = $state('');
 let containerState = $derived(container.state);
 let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
-let onDataDisposable: IDisposable | undefined;
+let onDataDisposable: { dispose(): void } | undefined;
 let reconnecting = false;
 
 function registerInputHandler(callbackId: number): void {
@@ -145,15 +141,12 @@ async function refreshTerminal(): Promise<void> {
   if (!terminalXtermDiv) {
     return;
   }
+  await ensureGhosttyInit();
 
   // grab font size
   const fontSize = await window.getConfigurationValue<number>(
     TerminalSettings.SectionName + '.' + TerminalSettings.FontSize,
   );
-  const lineHeight = await window.getConfigurationValue<number>(
-    TerminalSettings.SectionName + '.' + TerminalSettings.LineHeight,
-  );
-
   const scrollback = await window.getConfigurationValue<number>(
     TerminalSettings.SectionName + '.' + TerminalSettings.Scrollback,
   );
@@ -163,26 +156,22 @@ async function refreshTerminal(): Promise<void> {
 
   shellTerminal = new Terminal({
     fontSize,
-    lineHeight,
-    screenReaderMode,
+    fontFamily: TERMINAL_FONT_FAMILY,
     theme: getTerminalTheme(),
     scrollback,
   });
-  if (existingTerminal) {
-    ignoreFirstData = true;
-    shellTerminal.options = {
-      fontSize,
-      lineHeight,
-    };
-    shellTerminal.write(existingTerminal.terminal);
-  }
 
   const fitAddon = new FitAddon();
   serializeAddon = new SerializeAddon();
+
+  shellTerminal.open(terminalXtermDiv);
   shellTerminal.loadAddon(fitAddon);
   shellTerminal.loadAddon(serializeAddon);
 
-  shellTerminal.open(terminalXtermDiv);
+  if (existingTerminal) {
+    ignoreFirstData = true;
+    shellTerminal.write(existingTerminal.terminal);
+  }
 
   // call fit addon each time we resize the window
   window.addEventListener('resize', () => {
@@ -205,7 +194,7 @@ onMount(async () => {
 onDestroy(() => {
   clearReconnectTimer();
   onDataDisposable?.dispose();
-  terminalContent = serializeAddon.serialize();
+  terminalContent = serializeAddon?.serialize() ?? '';
   registerTerminal({
     engineId: container.engineId,
     containerId: container.id,

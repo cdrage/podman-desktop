@@ -29,8 +29,6 @@ import { providerInfos } from '/@/stores/providers';
 
 import { verifyStatus } from './ProviderStatusTestHelper.spec';
 
-vi.mock(import('@xterm/xterm'));
-
 class InitializationContextImpl {
   #promise: unknown;
   #error: unknown;

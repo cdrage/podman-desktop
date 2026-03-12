@@ -3,7 +3,7 @@ import { faHistory, faPlay, faStop } from '@fortawesome/free-solid-svg-icons';
 import type { ProviderConnectionInfo, ProviderInfo } from '@podman-desktop/core-api';
 import type { IConfigurationPropertyRecordedSchema } from '@podman-desktop/core-api/configuration';
 import { Button, ErrorMessage, Modal } from '@podman-desktop/ui-svelte';
-import type { Terminal } from '@xterm/xterm';
+import type { Terminal } from 'ghostty-web';
 import { onMount } from 'svelte';
 import { router } from 'tinro';
 
