@@ -56,7 +56,7 @@ export function button(d: Directive): void {
   } else if (d.attributes && 'command' in d.attributes) {
     // Make this a button if it's a command
     this.tag(
-      '<button class="px-4 py-[6px] rounded-[4px] text-white text-[13px] whitespace-nowrap bg-purple-600 hover:bg-purple-500 no-underline" data-command="' +
+      '<button class="px-4 py-[6px] rounded-[4px] text-white text-[13px] whitespace-nowrap bg-[var(--pd-button-primary-bg)] hover:bg-[var(--pd-button-primary-hover-bg)] no-underline" data-command="' +
         this.encode(d.attributes.command) +
         '">',
     );
@@ -72,7 +72,7 @@ export function button(d: Directive): void {
   } else {
     // If href is passed in, make this an anchor tag but make it look like a button
     this.tag(
-      '<a class="px-4 py-[6px] rounded-[4px] text-white! text-[13px] whitespace-nowrap bg-purple-600 hover:bg-purple-500! no-underline!"',
+      '<a class="px-4 py-[6px] rounded-[4px] text-white! text-[13px] whitespace-nowrap bg-[var(--pd-button-primary-bg)] hover:bg-[var(--pd-button-primary-hover-bg)]! no-underline!"',
     );
 
     // Href & title

@@ -1737,6 +1737,10 @@ export function initExposure(): void {
     return ipcInvoke('colorRegistry:listColors', themeId);
   });
 
+  contextBridge.exposeInMainWorld('isDarkTheme', async (themeId: string): Promise<boolean> => {
+    return ipcInvoke('colorRegistry:isDarkTheme', themeId);
+  });
+
   // Handle callback to open devtools for extensions
   // by delegating to the renderer process
   ipcRenderer.on('dev-tools:open-extension', (_, extensionId: string) => {

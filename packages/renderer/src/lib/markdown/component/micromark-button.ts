@@ -41,7 +41,7 @@ interface ButtonElement {
 
 const BASE_BUTTON_CSS =
   'flex flex-row items-center justify-center px-4 py-[6px] max-w-[200px] rounded-[4px] text-white text-[13px] whitespace-nowrap no-underline';
-const NORMAL_MODE_CSS = `${BASE_BUTTON_CSS} bg-purple-600 hover:bg-purple-500`;
+const NORMAL_MODE_CSS = `${BASE_BUTTON_CSS} bg-[var(--pd-button-primary-bg)] hover:bg-[var(--pd-button-primary-hover-bg)]`;
 const ERROR_MODE_CSS = `${BASE_BUTTON_CSS} text-gray-400 bg-red-900 hover:bg-red-700`;
 
 /**

@@ -23,7 +23,7 @@ import { expect, test } from 'vitest';
 
 import ProviderInfoCircle from './ProviderInfoCircle.svelte';
 
-test('Expect podman is purple', async () => {
+test('Expect podman is accent', async () => {
   const type = 'podman';
   render(ProviderInfoCircle, {
     type,
@@ -31,7 +31,7 @@ test('Expect podman is purple', async () => {
 
   const circle = screen.getByLabelText('Provider info circle');
   expect(circle).toBeInTheDocument();
-  expect(circle).toHaveClass('bg-purple-600');
+  expect(circle).toHaveClass('bg-[var(--pd-notification-dot)]');
 });
 
 test('Expect kubernetes is purple', async () => {

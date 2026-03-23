@@ -49,5 +49,18 @@ function updateIsDark(appearance: string): void {
     isDark.set(false);
   } else if (appearance === AppearanceSettings.DarkEnumValue) {
     isDark.set(true);
+  } else {
+    // Custom extension theme (e.g. "redhat-dark", "matrix-dark") — resolve
+    // via the color registry which knows the parent theme chain.
+    window
+      .isDarkTheme(appearance)
+      .then(dark => {
+        isDark.set(dark);
+      })
+      .catch((err: unknown) => {
+        console.error(`Error checking isDarkTheme for ${appearance}`, err);
+        // fallback: assume dark
+        isDark.set(true);
+      });
   }
 }

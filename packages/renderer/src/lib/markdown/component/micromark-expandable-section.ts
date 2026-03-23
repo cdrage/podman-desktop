@@ -77,7 +77,7 @@ export function createExpandableSection(this: CompileContext, expandable: Expand
 
   // create button (icon + label)
   this.tag(
-    `<button class='flex space-x-2 text-purple-400 w-fit hover:bg-white hover:bg-opacity-10 text-xs items-center' data-expandable='${
+    `<button class='flex space-x-2 text-[var(--pd-link)] w-fit hover:bg-white hover:bg-opacity-10 text-xs items-center' data-expandable='${
       expandableElement.id
     }' style='display: ${expandable.showToggle ? 'flex' : 'none'};' aria-label='${expandableElement.id}'>`,
   );

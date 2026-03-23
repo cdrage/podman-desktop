@@ -25,10 +25,12 @@ import { configurationProperties } from './configurationProperties';
 
 // mock window.getConfigurationValue
 const getConfigurationValueMock = vi.fn();
+const isDarkThemeMock = vi.fn();
 
 beforeEach(() => {
   vi.clearAllMocks();
   Object.defineProperty(window, 'getConfigurationValue', { value: getConfigurationValueMock });
+  Object.defineProperty(window, 'isDarkTheme', { value: isDarkThemeMock });
 });
 
 test('Expect light mode using system when OS is set to light', async () => {
@@ -75,4 +77,22 @@ test('Expect dark mode using dark configuration', async () => {
   configurationProperties.set([]);
 
   await vi.waitFor(() => expect(get(isDark)).toBe(true));
+});
+
+test('Expect dark mode for custom dark theme via color registry', async () => {
+  isDarkThemeMock.mockResolvedValue(true);
+  getConfigurationValueMock.mockResolvedValue('redhat-dark');
+  configurationProperties.set([]);
+
+  await vi.waitFor(() => expect(get(isDark)).toBe(true));
+  expect(isDarkThemeMock).toHaveBeenCalledWith('redhat-dark');
+});
+
+test('Expect light mode for custom light theme via color registry', async () => {
+  isDarkThemeMock.mockResolvedValue(false);
+  getConfigurationValueMock.mockResolvedValue('redhat-light');
+  configurationProperties.set([]);
+
+  await vi.waitFor(() => expect(get(isDark)).toBe(false));
+  expect(isDarkThemeMock).toHaveBeenCalledWith('redhat-light');
 });

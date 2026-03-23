@@ -23,7 +23,7 @@ import { expect, test } from 'vitest';
 
 import ProviderInfo from './ProviderInfo.svelte';
 
-test('Expect podman is purple', async () => {
+test('Expect podman is accent', async () => {
   const provider = 'podman';
   render(ProviderInfo, {
     provider,
@@ -31,10 +31,10 @@ test('Expect podman is purple', async () => {
   const label = screen.getByText(provider);
   expect(label).toBeInTheDocument();
   expect(label.parentElement?.firstChild).toBeInTheDocument();
-  expect(label.parentElement?.firstChild).toHaveClass('bg-purple-600');
+  expect(label.parentElement?.firstChild).toHaveClass('bg-[var(--pd-notification-dot)]');
 });
 
-test('Expect Podman (different case) is purple', async () => {
+test('Expect Podman (different case) is accent', async () => {
   const provider = 'Podman';
   render(ProviderInfo, {
     provider,
@@ -42,7 +42,7 @@ test('Expect Podman (different case) is purple', async () => {
   const label = screen.getByText(provider);
   expect(label).toBeInTheDocument();
   expect(label.parentElement?.firstChild).toBeInTheDocument();
-  expect(label.parentElement?.firstChild).toHaveClass('bg-purple-600');
+  expect(label.parentElement?.firstChild).toHaveClass('bg-[var(--pd-notification-dot)]');
 });
 
 test('Expect docker is blue', async () => {
