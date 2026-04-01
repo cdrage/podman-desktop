@@ -41,6 +41,7 @@ import BuildImageFromContainerfile from './lib/image/BuildImageFromContainerfile
 import ImageDetails from './lib/image/ImageDetails.svelte';
 import ImagesList from './lib/image/ImagesList.svelte';
 import ImportContainersImages from './lib/image/ImportContainersImages.svelte';
+import LaunchContainerWizard from './lib/image/LaunchContainerWizard.svelte';
 import LoadImages from './lib/image/LoadImages.svelte';
 import PullImage from './lib/image/PullImage.svelte';
 import RunImage from './lib/image/RunImage.svelte';
@@ -186,6 +187,9 @@ tablePersistence.storage = new PodmanDesktopStoragePersist();
           </Route>
           <Route path="/run/*" breadcrumb="Run Image">
             <RunImage />
+          </Route>
+          <Route path="/launch-wizard" breadcrumb="Launch Container">
+            <LaunchContainerWizard />
           </Route>
           <Route path="/build" breadcrumb="Build an Image" let:meta>
             <BuildImageFromContainerfile taskId={+meta.query.taskId}/>

@@ -57,6 +57,7 @@ export interface NavigationParameters {
   [NavigationPage.NETWORK]: { name: string; engineId: string };
   [NavigationPage.NETWORK_CREATE]: never;
   [NavigationPage.EXTENSIONS_CATALOG]: { searchTerm?: string };
+  [NavigationPage.LAUNCH_CONTAINER_WIZARD]: never;
 }
 
 // the parameters property is optional when the NavigationParameters say it is

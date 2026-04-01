@@ -237,6 +237,11 @@ export function initExposure(): void {
     } as NavigationRequest<NavigationPage.EXPERIMENTAL_FEATURES>);
   });
 
+  // Handle protocol to launch containers from external links
+  ipcRenderer.on('podman-desktop-protocol:run-image', (_, config: unknown) => {
+    apiSender.send('run-image:from-protocol', config);
+  });
+
   contextBridge.exposeInMainWorld('clearTasks', async (): Promise<void> => {
     return ipcInvoke('tasks:clear-all');
   });

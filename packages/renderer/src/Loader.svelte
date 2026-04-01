@@ -1,4 +1,5 @@
 <script lang="ts">
+import type { RunImageFromProtocolConfig } from '@podman-desktop/core-api';
 import { onDestroy, onMount, tick } from 'svelte';
 import { router } from 'tinro';
 
@@ -6,6 +7,7 @@ import App from './App.svelte';
 import SealRocket from './lib/images/SealRocket.svelte';
 import ColorsStyle from './lib/style/ColorsStyle.svelte';
 import { lastPage } from './stores/breadcrumb';
+import { launchContainerWizardConfig } from './stores/launch-container-wizard-store';
 
 let systemReady = false;
 
@@ -73,6 +75,24 @@ window.events?.receive('install-extension:from-id', (extensionId: unknown) => {
     });
   } else {
     action().catch((err: unknown) => console.log('Error while redirecting to extensions', err));
+  }
+});
+
+// receive events from main process to launch a container from a protocol link
+window.events?.receive('run-image:from-protocol', (config: unknown) => {
+  const action = async (): Promise<void> => {
+    launchContainerWizardConfig.set(config as RunImageFromProtocolConfig);
+    await tick();
+    router.goto('/images/launch-wizard');
+    lastPage.set({ name: 'Images', path: '/images' });
+  };
+
+  if (!systemReady) {
+    window.addEventListener('system-ready', () => {
+      action().catch((err: unknown) => console.log('Error while starting launch wizard', err));
+    });
+  } else {
+    action().catch((err: unknown) => console.log('Error while starting launch wizard', err));
   }
 });
 
