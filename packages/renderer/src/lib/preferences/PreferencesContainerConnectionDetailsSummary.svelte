@@ -2,6 +2,7 @@
 import type { ContainerProviderConnection } from '@podman-desktop/api';
 import type { ProviderContainerConnectionInfo } from '@podman-desktop/core-api';
 import type { IConfigurationPropertyRecordedSchema } from '@podman-desktop/core-api/configuration';
+import { SummaryField, SummaryGrid, SummarySection } from '@podman-desktop/ui-svelte';
 
 import Donut from '/@/lib/donut/Donut.svelte';
 
@@ -21,6 +22,14 @@ let resourceMetrics = $derived(extractConnectionResourceMetrics(providerContaine
 let displayMetrics = $derived(resourceMetrics ? toDisplayMetrics(resourceMetrics) : []);
 let nonResourceConfigs = $derived(
   providerContainerConfiguration.filter(conf => !RESOURCE_FORMATS.has(conf.format ?? '') && !conf.hidden),
+);
+
+let typeLabel = $derived(
+  containerConnectionInfo?.type === 'docker'
+    ? 'Docker'
+    : containerConnectionInfo?.type === 'podman'
+      ? 'Podman'
+      : containerConnectionInfo?.type ?? '',
 );
 
 $effect(() => {
@@ -44,41 +53,26 @@ $effect(() => {
 });
 </script>
 
-<div class="h-full text-[var(--pd-details-body-text)]">
-  {#if containerConnectionInfo}
-    <div class="flex pl-8 py-4 flex-col w-full text-sm">
+{#if containerConnectionInfo}
+  <SummaryGrid>
+    <SummarySection title="Connection">
       {#if containerConnectionInfo.error}
-        <div class="flex flex-row mt-5 text-[var(--pd-state-error)]" role="alert" aria-label="Connection error">
-          <span class="font-semibold min-w-[150px]">Error</span>
-          <span>{containerConnectionInfo.error}</span>
-        </div>
+        <SummaryField label="Error">
+          <span class="text-[var(--pd-state-error)]" role="alert" aria-label="Connection error"
+            >{containerConnectionInfo.error}</span>
+        </SummaryField>
       {/if}
-      <div class="flex flex-row mt-5">
-        <span class="font-semibold min-w-[150px]">Name</span>
-        <span aria-label={containerConnectionInfo.name}>{containerConnectionInfo.name}</span>
-      </div>
+      <SummaryField label="Name" value={containerConnectionInfo.name} />
       {#each displayMetrics as metric (metric.title)}
-        <div class="flex flex-row mt-5">
-          <span class="font-semibold min-w-[150px]">{metric.title}</span>
+        <SummaryField label={metric.title ?? ''}>
           <Donut title={metric.title} value={metric.value} percent={metric.percent} />
-        </div>
+        </SummaryField>
       {/each}
       {#each nonResourceConfigs as connectionSetting (connectionSetting.id)}
-        <div class="flex flex-row mt-5">
-          <span class="font-semibold min-w-[150px]">{connectionSetting.description}</span>
-          <span>{connectionSetting.value}</span>
-        </div>
+        <SummaryField label={connectionSetting.description ?? ''} value={String(connectionSetting.value)} />
       {/each}
-      <div class="flex flex-row mt-5">
-        <span class="font-semibold min-w-[150px]">Type</span>
-        <span aria-label={containerConnectionInfo.type}
-          >{#if containerConnectionInfo.type === 'docker'}Docker{:else if containerConnectionInfo.type === 'podman'}Podman{/if}</span>
-      </div>
-      <div class="flex flex-row mt-5">
-        <span class="font-semibold min-w-[150px]">Endpoint</span>
-        <span aria-label={containerConnectionInfo.endpoint.socketPath}
-          >{containerConnectionInfo.endpoint.socketPath}</span>
-      </div>
-    </div>
-  {/if}
-</div>
+      <SummaryField label="Type" value={typeLabel} />
+      <SummaryField label="Endpoint" value={containerConnectionInfo.endpoint.socketPath} copyable mono />
+    </SummarySection>
+  </SummaryGrid>
+{/if}

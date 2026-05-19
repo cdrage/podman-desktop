@@ -50,7 +50,7 @@ test('Expect all details to show up', () => {
 
   expect(screen.getByText('Network 1')).toBeInTheDocument();
   expect(screen.getByText('123456789012345')).toBeInTheDocument();
-  expect(screen.getByText('unused')).toBeInTheDocument();
+  expect(screen.getByText('Unused')).toBeInTheDocument();
   expect(screen.getByText('bridge')).toBeInTheDocument();
   expect(screen.getByText('false')).toBeInTheDocument();
   expect(screen.getByText('podman1')).toBeInTheDocument();

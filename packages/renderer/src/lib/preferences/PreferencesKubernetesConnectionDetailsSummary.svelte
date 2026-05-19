@@ -2,21 +2,26 @@
 import type { KubernetesProviderConnection } from '@podman-desktop/api';
 import type { ProviderKubernetesConnectionInfo } from '@podman-desktop/core-api';
 import type { IConfigurationPropertyRecordedSchema } from '@podman-desktop/core-api/configuration';
+import { SummaryField, SummaryGrid, SummarySection } from '@podman-desktop/ui-svelte';
 
 import type { IProviderConnectionConfigurationPropertyRecorded } from './Util';
 
-export let properties: IConfigurationPropertyRecordedSchema[] = [];
-export let providerInternalId: string | undefined = undefined;
-export let kubernetesConnectionInfo: ProviderKubernetesConnectionInfo | undefined = undefined;
-
-let tmpProviderContainerConfiguration: IProviderConnectionConfigurationPropertyRecorded[] = [];
-function updateTmpProviderContainerConfiguration(value: IProviderConnectionConfigurationPropertyRecorded[]): void {
-  tmpProviderContainerConfiguration = value;
+interface Props {
+  properties?: IConfigurationPropertyRecordedSchema[];
+  providerInternalId?: string;
+  kubernetesConnectionInfo?: ProviderKubernetesConnectionInfo;
 }
 
-$: Promise.all(
-  properties.map(async configurationKey => {
-    return {
+const { properties = [], providerInternalId, kubernetesConnectionInfo }: Props = $props();
+
+let providerContainerConfiguration: IProviderConnectionConfigurationPropertyRecorded[] = $state([]);
+let providerConnectionConfiguration = $derived(
+  providerContainerConfiguration.filter(configurationKey => configurationKey.value !== undefined),
+);
+
+$effect(() => {
+  Promise.all(
+    properties.map(async configurationKey => ({
       ...configurationKey,
       value: configurationKey.id
         ? await window.getConfigurationValue(
@@ -26,44 +31,30 @@ $: Promise.all(
         : undefined,
       connection: kubernetesConnectionInfo?.name ?? '',
       providerId: providerInternalId ?? '',
-    };
-  }),
-)
-  .then(value => updateTmpProviderContainerConfiguration(value.flat()))
-  .catch((err: unknown) => console.error('Error collecting providers', err));
-
-$: providerConnectionConfiguration = tmpProviderContainerConfiguration.filter(
-  configurationKey => configurationKey.value !== undefined,
-);
+    })),
+  )
+    .then(result => {
+      providerContainerConfiguration = result.flat();
+    })
+    .catch((err: unknown) => console.error('Error collecting providers', err));
+});
 </script>
 
-<div class="h-full text-[var(--pd-table-body-text)]">
-  {#if kubernetesConnectionInfo}
-    <div class="flex pl-8 py-4 flex-col w-full text-sm">
+{#if kubernetesConnectionInfo}
+  <SummaryGrid>
+    <SummarySection title="Connection">
       {#if kubernetesConnectionInfo.error}
-        <div class="flex flex-row mt-5 text-[var(--pd-state-error)]" role="alert" aria-label="Connection error">
-          <span class="font-semibold min-w-[150px]">Error</span>
-          <span>{kubernetesConnectionInfo.error}</span>
-        </div>
+        <SummaryField label="Error">
+          <span class="text-[var(--pd-state-error)]" role="alert" aria-label="Connection error"
+            >{kubernetesConnectionInfo.error}</span>
+        </SummaryField>
       {/if}
-      <div class="flex flex-row mt-5">
-        <span class="font-semibold min-w-[150px]">Name</span>
-        <span aria-label={kubernetesConnectionInfo.name}>{kubernetesConnectionInfo.name}</span>
-      </div>
+      <SummaryField label="Name" value={kubernetesConnectionInfo.name} />
       {#each providerConnectionConfiguration as connectionSetting (connectionSetting.id)}
-        <div class="flex flex-row mt-5">
-          <span class="font-semibold min-w-[150px]">{connectionSetting.description}</span>
-          <span>{connectionSetting.value}</span>
-        </div>
+        <SummaryField label={connectionSetting.description ?? ''} value={String(connectionSetting.value)} />
       {/each}
-      <div class="flex flex-row mt-5">
-        <span class="font-semibold min-w-[150px]">Type</span>
-        <span aria-label="kubernetes">Kubernetes</span>
-      </div>
-      <div class="flex flex-row mt-5">
-        <span class="font-semibold min-w-[150px]">Endpoint</span>
-        <span aria-label={kubernetesConnectionInfo.endpoint.apiURL}>{kubernetesConnectionInfo.endpoint.apiURL}</span>
-      </div>
-    </div>
-  {/if}
-</div>
+      <SummaryField label="Type" value="Kubernetes" />
+      <SummaryField label="Endpoint" value={kubernetesConnectionInfo.endpoint.apiURL} copyable mono />
+    </SummarySection>
+  </SummaryGrid>
+{/if}

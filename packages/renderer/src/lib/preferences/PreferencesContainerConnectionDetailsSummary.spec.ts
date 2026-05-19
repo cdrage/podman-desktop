@@ -63,26 +63,30 @@ test('Expect that name, socket and type are displayed for Podman', async () => {
   render(PreferencesContainerConnectionDetailsSummary, {
     containerConnectionInfo: podmanContainerConnection,
   });
-  const spanConnection = screen.getByLabelText('connection');
-  expect(spanConnection).toBeInTheDocument();
-  const spanSocket = screen.getByLabelText('socket');
-  expect(spanSocket).toBeInTheDocument();
-  const spanType = screen.getByLabelText('podman');
-  expect(spanType).toBeInTheDocument();
-  expect(spanType.textContent).toBe('Podman');
+  const nameField = screen.getByLabelText('Name');
+  expect(nameField).toBeInTheDocument();
+  expect(nameField).toHaveTextContent('connection');
+  const endpointField = screen.getByLabelText('Endpoint');
+  expect(endpointField).toBeInTheDocument();
+  expect(endpointField).toHaveTextContent('socket');
+  const typeField = screen.getByLabelText('Type');
+  expect(typeField).toBeInTheDocument();
+  expect(typeField).toHaveTextContent('Podman');
 });
 
 test('Expect that name, socket and type are displayed for Docker', async () => {
   render(PreferencesContainerConnectionDetailsSummary, {
     containerConnectionInfo: dockerContainerConnection,
   });
-  const spanConnection = screen.getByLabelText('connection');
-  expect(spanConnection).toBeInTheDocument();
-  const spanSocket = screen.getByLabelText('socket');
-  expect(spanSocket).toBeInTheDocument();
-  const spanType = screen.getByLabelText('docker');
-  expect(spanType).toBeInTheDocument();
-  expect(spanType.textContent).toBe('Docker');
+  const nameField = screen.getByLabelText('Name');
+  expect(nameField).toBeInTheDocument();
+  expect(nameField).toHaveTextContent('connection');
+  const endpointField = screen.getByLabelText('Endpoint');
+  expect(endpointField).toBeInTheDocument();
+  expect(endpointField).toHaveTextContent('socket');
+  const typeField = screen.getByLabelText('Type');
+  expect(typeField).toBeInTheDocument();
+  expect(typeField).toHaveTextContent('Docker');
 });
 
 test('Expect error is displayed when connection has error', async () => {

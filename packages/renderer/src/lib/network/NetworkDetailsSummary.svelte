@@ -1,10 +1,7 @@
 <script lang="ts">
 import { NavigationPage } from '@podman-desktop/core-api';
-import { Link } from '@podman-desktop/ui-svelte';
+import { Link, StatusBadge, SummaryField, SummaryGrid, SummarySection } from '@podman-desktop/ui-svelte';
 
-import DetailsCell from '/@/lib/details/DetailsCell.svelte';
-import DetailsTable from '/@/lib/details/DetailsTable.svelte';
-import DetailsTitle from '/@/lib/details/DetailsTitle.svelte';
 import { handleNavigation } from '/@/navigation';
 
 import type { NetworkInfoUI } from './NetworkInfoUI';
@@ -25,50 +22,27 @@ function openContainer(containerID: string): void {
 }
 </script>
 
-<DetailsTable>
-  <tr>
-    <DetailsTitle>Details</DetailsTitle>
-  </tr>
-  <tr>
-    <DetailsCell>Name</DetailsCell>
-    <DetailsCell>{network.name}</DetailsCell>
-  </tr>
-  <tr>
-    <DetailsCell>Id</DetailsCell>
-    <DetailsCell>{network.id}</DetailsCell>
-  </tr>
-  <tr>
-    <DetailsCell>Status</DetailsCell>
-    <DetailsCell>{network.status.toLowerCase()}</DetailsCell>
-  </tr>
-  <tr>
-    <DetailsCell>Driver</DetailsCell>
-    <DetailsCell>{network.driver}</DetailsCell>
-  </tr>
-  <tr>
-    <DetailsCell>IPV6 enabled</DetailsCell>
-    <DetailsCell>{network.ipv6_enabled}</DetailsCell>
-  </tr>
-  <tr>
-    <DetailsCell>Engine ID</DetailsCell>
-    <DetailsCell>{network.engineId}</DetailsCell>
-  </tr>
-  <tr>
-    <DetailsCell>Engine Name</DetailsCell>
-    <DetailsCell>{network.engineName}</DetailsCell>
-  </tr>
+<SummaryGrid>
+  <SummarySection title="Details">
+    <SummaryField label="Name" value={network.name} />
+    <SummaryField label="Id" value={network.id} copyable mono />
+    <SummaryField label="Status">
+      <StatusBadge status={network.status} />
+    </SummaryField>
+    <SummaryField label="Driver" value={network.driver} />
+    <SummaryField label="IPV6 enabled" value={String(network.ipv6_enabled)} />
+    <SummaryField label="Engine ID" value={network.engineId} copyable mono />
+    <SummaryField label="Engine Name" value={network.engineName} />
+  </SummarySection>
+
   {#if network.containers.length > 0}
-    <tr>
-      <DetailsTitle>Container Usage</DetailsTitle>
-    </tr>
-    {#each network.containers as container (container.id)}
-      <tr>
-        <DetailsCell>
+    <SummarySection title="Container Usage">
+      {#each network.containers as container (container.id)}
+        <SummaryField label={container.id} mono>
           <Link on:click={(): void => openContainer(container.id)}
             >{container.name}</Link>
-        </DetailsCell>
-        <DetailsCell>{container.id}</DetailsCell>
-      </tr>
-    {/each}
+        </SummaryField>
+      {/each}
+    </SummarySection>
   {/if}
-</DetailsTable>
+</SummaryGrid>

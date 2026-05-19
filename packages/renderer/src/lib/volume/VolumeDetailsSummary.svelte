@@ -1,16 +1,16 @@
 <script lang="ts">
 import { NavigationPage } from '@podman-desktop/core-api';
-import { Link } from '@podman-desktop/ui-svelte';
+import { FormattedDate, Link, StatusBadge, SummaryField, SummaryGrid, SummarySection } from '@podman-desktop/ui-svelte';
 
-import DetailsCell from '/@/lib/details/DetailsCell.svelte';
-import DetailsTable from '/@/lib/details/DetailsTable.svelte';
-import DetailsTitle from '/@/lib/details/DetailsTitle.svelte';
 import { handleNavigation } from '/@/navigation';
 
 import type { VolumeInfoUI } from './VolumeInfoUI';
 
-export let volume: VolumeInfoUI;
-const createdTime: Date = new Date(volume.created);
+interface Props {
+  volume: VolumeInfoUI;
+}
+
+let { volume }: Props = $props();
 
 function openContainer(containerID: string): void {
   handleNavigation({
@@ -22,62 +22,32 @@ function openContainer(containerID: string): void {
 }
 </script>
 
-<DetailsTable>
-  <tr>
-    <DetailsTitle>Details</DetailsTitle>
-  </tr>
-  <tr>
-    <DetailsCell>Name</DetailsCell>
-    <DetailsCell>{volume.name}</DetailsCell>
-  </tr>
-  <tr>
-    <DetailsCell>Size</DetailsCell>
-    <DetailsCell>{volume.humanSize}</DetailsCell>
-  </tr>
-  <tr>
-    <DetailsCell>Age</DetailsCell>
-    <DetailsCell>{volume.age}</DetailsCell>
-  </tr>
-  <tr>
-    <DetailsCell>Created</DetailsCell>
-    <DetailsCell>{createdTime}</DetailsCell>
-  </tr>
-  <tr>
-    <DetailsCell>Status</DetailsCell>
-    <DetailsCell>{volume.status.toLowerCase()}</DetailsCell>
-  </tr>
-  <tr>
-    <DetailsCell>Mount Point</DetailsCell>
-    <DetailsCell>{volume.mountPoint}</DetailsCell>
-  </tr>
-  <tr>
-    <DetailsCell>Scope</DetailsCell>
-    <DetailsCell>{volume.scope}</DetailsCell>
-  </tr>
-  <tr>
-    <DetailsCell>Driver</DetailsCell>
-    <DetailsCell>{volume.driver}</DetailsCell>
-  </tr>
-  <tr>
-    <DetailsCell>Engine ID</DetailsCell>
-    <DetailsCell>{volume.engineId}</DetailsCell>
-  </tr>
-  <tr>
-    <DetailsCell>Engine Name</DetailsCell>
-    <DetailsCell>{volume.engineName}</DetailsCell>
-  </tr>
+<SummaryGrid>
+  <SummarySection title="Details">
+    <SummaryField label="Name" value={volume.name} />
+    <SummaryField label="Size" value={volume.humanSize} />
+    <SummaryField label="Age" value={volume.age} />
+    <SummaryField label="Created">
+      <FormattedDate date={volume.created} relative />
+    </SummaryField>
+    <SummaryField label="Status">
+      <StatusBadge status={volume.status} />
+    </SummaryField>
+    <SummaryField label="Mount Point" value={volume.mountPoint} />
+    <SummaryField label="Scope" value={volume.scope} />
+    <SummaryField label="Driver" value={volume.driver} />
+    <SummaryField label="Engine ID" value={volume.engineId} copyable mono />
+    <SummaryField label="Engine Name" value={volume.engineName} />
+  </SummarySection>
+
   {#if volume.containersUsage.length > 0}
-    <tr>
-      <DetailsTitle>Container Usage</DetailsTitle>
-    </tr>
-    {#each volume.containersUsage as container (container.id)}
-      <tr>
-        <DetailsCell>
+    <SummarySection title="Container Usage">
+      {#each volume.containersUsage as container (container.id)}
+        <SummaryField label={container.id} mono>
           <Link on:click={(): void => openContainer(container.id)}
             >{container.names.map(name => (name.startsWith('/') ? name.slice(1) : name)).join(' ')}</Link>
-        </DetailsCell>
-        <DetailsCell>{container.id}</DetailsCell>
-      </tr>
-    {/each}
+        </SummaryField>
+      {/each}
+    </SummarySection>
   {/if}
-</DetailsTable>
+</SummaryGrid>

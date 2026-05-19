@@ -84,6 +84,16 @@ test('Expect render ImageDetailsSummary', async () => {
   expect(text).toBeInTheDocument();
 });
 
+test('renders Details summary section', async () => {
+  render(ImageDetailsSummary, { image: image });
+
+  expect(screen.getByRole('region', { name: 'Summary' })).toBeInTheDocument();
+  expect(screen.getByText('Details')).toBeInTheDocument();
+  expect(screen.getByText(image.name)).toBeInTheDocument();
+  expect(screen.getByText('latest-tag')).toBeInTheDocument();
+  expect(screen.getByText('my-image')).toBeInTheDocument();
+});
+
 test('if ImageInfoUI isManifest is true, expect window.inspectManifest to be called', async () => {
   const imageWithManifest: ImageInfoUI = {
     ...image,
@@ -107,4 +117,17 @@ test('if ImageInfoUI isManifest is true, expect window.inspectManifest to be cal
   expect(screen.getByText('123456')).toBeInTheDocument();
   expect(screen.getByText('amd64')).toBeInTheDocument();
   expect(screen.queryAllByText('linux')).toHaveLength(2);
+});
+
+test('manifest section renders with section heading', async () => {
+  const imageWithManifest: ImageInfoUI = {
+    ...image,
+    isManifest: true,
+  };
+
+  render(ImageDetailsSummary, { image: imageWithManifest });
+
+  await waitFor(() => {
+    expect(screen.getByText('Manifest Details')).toBeInTheDocument();
+  });
 });

@@ -1,11 +1,7 @@
 <script lang="ts">
 import type { ManifestInspectInfo } from '@podman-desktop/api';
+import { SummaryField, SummaryGrid, SummarySection } from '@podman-desktop/ui-svelte';
 import { onMount } from 'svelte';
-
-import Cell from '/@/lib/details/DetailsCell.svelte';
-import Subtitle from '/@/lib/details/DetailsSubtitle.svelte';
-import Table from '/@/lib/details/DetailsTable.svelte';
-import Title from '/@/lib/details/DetailsTitle.svelte';
 
 import { ImageUtils } from './image-utils';
 import type { ImageInfoUI } from './ImageInfoUI';
@@ -31,68 +27,32 @@ onMount(async () => {
 });
 </script>
 
-<Table>
-  <tr>
-    <Title>Details</Title>
-  </tr>
-  <tr>
-    <Cell>Name</Cell>
-    <Cell>{image.name}</Cell>
-  </tr>
-  <tr>
-    <Cell>Tag</Cell>
-    <Cell>{image.tag}</Cell>
-  </tr>
-  <tr>
-    <Cell>ID</Cell>
-    <Cell>{image.id}</Cell>
-  </tr>
-  <tr>
-    <Cell>Size</Cell>
-    <Cell>{image.humanSize}</Cell>
-  </tr>
-  <tr>
-    <Cell>Age</Cell>
-    <Cell>{image.age}</Cell>
-  </tr>
+<SummaryGrid>
+  <SummarySection title="Details">
+    <SummaryField label="Name" value={image.name} />
+    <SummaryField label="Tag" value={image.tag} />
+    <SummaryField label="ID" value={image.id} copyable mono />
+    <SummaryField label="Size" value={image.humanSize} />
+    <SummaryField label="Age" value={image.age} />
+  </SummarySection>
+
   {#if manifestDetails && manifestDetails.manifests.length > 0}
-    <tr>
-      <Title>Manifest Details</Title>
-    </tr>
-    {#each manifestDetails.manifests as manifest (manifest.digest)}
-      <tr>
-        <Subtitle>{imageUtils.getShortId(manifest.digest)}</Subtitle>
-      </tr>
-      <tr>
-        <Cell>Media Type</Cell>
-        <Cell>{manifest.mediaType}</Cell>
-      </tr>
-      <tr>
-        <Cell>Architecture</Cell>
-        <Cell>{manifest.platform.architecture}</Cell>
-      </tr>
-      {#if manifest.platform.variant}
-        <tr>
-          <Cell>Variant</Cell>
-          <Cell>{manifest.platform.variant}</Cell>
-        </tr>
-      {/if}
-      <tr>
-        <Cell>OS</Cell>
-        <Cell>{manifest.platform.os}</Cell>
-      </tr>
-      <tr>
-        <Cell>Size</Cell>
-        <Cell>{imageUtils.getHumanSize(manifest.size)}</Cell>
-      </tr>
-      {#if manifest.urls}
-        {#each manifest.urls as url, index (index)}
-          <tr>
-            <Cell>URL</Cell>
-            <Cell>{url}</Cell>
-          </tr>
-        {/each}
-      {/if}
-    {/each}
+    <SummarySection title="Manifest Details">
+      {#each manifestDetails.manifests as manifest (manifest.digest)}
+        <SummaryField label="Digest" value={imageUtils.getShortId(manifest.digest)} copyable mono />
+        <SummaryField label="Media Type" value={manifest.mediaType} />
+        <SummaryField label="Architecture" value={manifest.platform.architecture} />
+        {#if manifest.platform.variant}
+          <SummaryField label="Variant" value={manifest.platform.variant} />
+        {/if}
+        <SummaryField label="OS" value={manifest.platform.os} />
+        <SummaryField label="Size" value={imageUtils.getHumanSize(manifest.size)} />
+        {#if manifest.urls}
+          {#each manifest.urls as url, index (index)}
+            <SummaryField label="URL" value={url} />
+          {/each}
+        {/if}
+      {/each}
+    </SummarySection>
   {/if}
-</Table>
+</SummaryGrid>

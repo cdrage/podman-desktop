@@ -1,81 +1,61 @@
 <script lang="ts">
 import { NavigationPage } from '@podman-desktop/core-api';
-import { Link } from '@podman-desktop/ui-svelte';
+import { FormattedDate, Link, StatusBadge, SummaryField, SummaryGrid, SummarySection } from '@podman-desktop/ui-svelte';
 
-import DetailsCell from '/@/lib/details/DetailsCell.svelte';
-import DetailsSubtitle from '/@/lib/details/DetailsSubtitle.svelte';
-import DetailsTable from '/@/lib/details/DetailsTable.svelte';
-import DetailsTitle from '/@/lib/details/DetailsTitle.svelte';
 import { handleNavigation } from '/@/navigation';
 
 import type { PodInfoContainerUI, PodInfoUI } from './PodInfoUI';
 
-export let pod: PodInfoUI | undefined;
-let creationTime: Date;
-if (pod) {
-  creationTime = new Date(pod.created);
+interface Props {
+  pod: PodInfoUI | undefined;
 }
+
+let { pod }: Props = $props();
 
 function navigateToLogs(container: PodInfoContainerUI): void {
   return handleNavigation({ page: NavigationPage.CONTAINER_LOGS, parameters: { id: container.Id } });
 }
 </script>
 
-<DetailsTable>
-  {#if pod}
-    <tr>
-      <DetailsTitle>Details</DetailsTitle>
-    </tr>
-    <tr>
-      <DetailsCell>Name</DetailsCell>
-      <DetailsCell>{pod.name}</DetailsCell>
-    </tr>
-    <tr>
-      <DetailsCell>ID</DetailsCell>
-      <DetailsCell>{pod.id}</DetailsCell>
-    </tr>
-    <tr>
-      <DetailsCell>Created</DetailsCell>
-      <DetailsCell>{creationTime}</DetailsCell>
-    </tr>
-    <tr>
-      <DetailsCell>Age</DetailsCell>
-      <DetailsCell>{pod.age}</DetailsCell>
-    </tr>
-    <tr>
-      <DetailsTitle>Pod Status</DetailsTitle>
-    </tr>
-    <tr>
-      <DetailsCell>Status</DetailsCell>
-      <DetailsCell>{pod.status.toLowerCase()}</DetailsCell>
-    </tr>
-    <tr>
-      <DetailsTitle>Containers</DetailsTitle>
-    </tr>
-    {#if pod.containers.length > 0}
-      {#each pod.containers as container (container.Id)}
-        <tr>
-          <DetailsSubtitle>
-            <Link on:click={(): void => navigateToLogs(container)}>
-              {container.Names}
-            </Link>
-          </DetailsSubtitle>
-        </tr>
-        <tr>
-          <DetailsCell>ID</DetailsCell>
-          <DetailsCell>{container.Id}</DetailsCell>
-        </tr>
-        <tr>
-          <DetailsCell>Status</DetailsCell>
-          <DetailsCell>{container.Status}</DetailsCell>
-        </tr>
-      {/each}
-    {:else}
-      <tr>
-        <DetailsCell>No containers</DetailsCell>
-      </tr>
-    {/if}
-  {:else}
-    <p class="text-[var(--pd-state-info)] font-medium">Loading...</p>
-  {/if}
-</DetailsTable>
+{#if pod}
+  <SummaryGrid>
+    <SummarySection title="Details">
+      <SummaryField label="Name" value={pod.name} />
+      <SummaryField label="ID" value={pod.id} copyable mono />
+      <SummaryField label="Created">
+        <FormattedDate date={pod.created} relative />
+      </SummaryField>
+      <SummaryField label="Age" value={pod.age} />
+    </SummarySection>
+
+    <SummarySection title="Pod Status">
+      <SummaryField label="Status">
+        <StatusBadge status={pod.status} />
+      </SummaryField>
+    </SummarySection>
+
+    <SummarySection title="Containers">
+      {#if pod.containers.length > 0}
+        {#each pod.containers as container, i (container.Id)}
+          <div
+            class="col-span-full grid grid-cols-1 sm:grid-cols-3 gap-x-8 gap-y-4
+              {i > 0 ? 'border-t border-[var(--pd-content-divider)] pt-5' : ''}">
+            <SummaryField label="Name">
+              <Link on:click={(): void => navigateToLogs(container)}>
+                {container.Names}
+              </Link>
+            </SummaryField>
+            <SummaryField label="ID" value={container.Id} copyable mono />
+            <SummaryField label="Status">
+              <StatusBadge status={container.Status} />
+            </SummaryField>
+          </div>
+        {/each}
+      {:else}
+        <SummaryField label="Containers" value={undefined} />
+      {/if}
+    </SummarySection>
+  </SummaryGrid>
+{:else}
+  <p class="text-[var(--pd-state-info)] font-medium">Loading...</p>
+{/if}

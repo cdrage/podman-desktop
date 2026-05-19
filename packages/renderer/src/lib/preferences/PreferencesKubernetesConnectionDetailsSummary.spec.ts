@@ -16,17 +16,17 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-empty-function */
-
 import '@testing-library/jest-dom/vitest';
 
 import type { ProviderKubernetesConnectionInfo } from '@podman-desktop/core-api';
 import { render, screen } from '@testing-library/svelte';
-import { expect, test } from 'vitest';
+import { beforeEach, expect, test, vi } from 'vitest';
 
 import PreferencesKubernetesConnectionDetailsSummary from './PreferencesKubernetesConnectionDetailsSummary.svelte';
+
+beforeEach(() => {
+  vi.resetAllMocks();
+});
 
 const kubernetesConnection: ProviderKubernetesConnectionInfo = {
   connectionType: 'kubernetes',
@@ -45,13 +45,15 @@ test('Expect that name, url and kubernetes are displayed', async () => {
   render(PreferencesKubernetesConnectionDetailsSummary, {
     kubernetesConnectionInfo: kubernetesConnection,
   });
-  const spanConnection = screen.getByLabelText('connection');
-  expect(spanConnection).toBeInTheDocument();
-  const spanUrl = screen.getByLabelText('url');
-  expect(spanUrl).toBeInTheDocument();
-  const kubernetes = screen.getByLabelText('kubernetes');
-  expect(kubernetes).toBeInTheDocument();
-  expect(kubernetes.textContent).toBe('Kubernetes');
+  const nameField = screen.getByLabelText('Name');
+  expect(nameField).toBeInTheDocument();
+  expect(nameField).toHaveTextContent('connection');
+  const endpointField = screen.getByLabelText('Endpoint');
+  expect(endpointField).toBeInTheDocument();
+  expect(endpointField).toHaveTextContent('url');
+  const typeField = screen.getByLabelText('Type');
+  expect(typeField).toBeInTheDocument();
+  expect(typeField).toHaveTextContent('Kubernetes');
 });
 
 test('Expect error is displayed when connection has error', async () => {

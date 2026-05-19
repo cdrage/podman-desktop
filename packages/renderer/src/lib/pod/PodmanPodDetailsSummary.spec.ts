@@ -19,10 +19,18 @@
 import '@testing-library/jest-dom/vitest';
 
 import { render, screen } from '@testing-library/svelte';
-import { expect, test } from 'vitest';
+import { beforeEach, expect, test, vi } from 'vitest';
 
 import type { PodInfoUI } from './PodInfoUI';
 import PodmanPodDetailsSummary from './PodmanPodDetailsSummary.svelte';
+
+vi.mock(import('humanize-duration'), () => ({
+  default: vi.fn((): string => '3 hours'),
+}));
+
+beforeEach(() => {
+  vi.resetAllMocks();
+});
 
 const fakePod: PodInfoUI = {
   id: 'fakePodId',
@@ -61,5 +69,48 @@ test('PodmanPodDetailsSummary renders with PodInfoUI object', async () => {
   expect(screen.getByText('fakeContainer1')).toBeInTheDocument();
   expect(screen.getByText('fakeCId2')).toBeInTheDocument();
   expect(screen.getByText('fakeContainer2')).toBeInTheDocument();
-  expect(screen.getAllByText('running')[0]).toBeInTheDocument();
+  // StatusBadge capitalizes the status text
+  expect(screen.getAllByText('Running')[0]).toBeInTheDocument();
+});
+
+test('renders summary sections with correct roles', () => {
+  render(PodmanPodDetailsSummary, { pod: fakePod });
+
+  expect(screen.getByRole('region', { name: 'Details' })).toBeInTheDocument();
+  expect(screen.getByRole('region', { name: 'Pod Status' })).toBeInTheDocument();
+  expect(screen.getByRole('region', { name: 'Containers' })).toBeInTheDocument();
+});
+
+test('renders status badges for pod and container statuses', () => {
+  render(PodmanPodDetailsSummary, { pod: fakePod });
+
+  const statusBadges = screen.getAllByRole('status');
+  // 1 for the pod status + 2 for the container statuses
+  expect(statusBadges).toHaveLength(3);
+});
+
+test('renders loading state when pod is undefined', () => {
+  render(PodmanPodDetailsSummary, { pod: undefined });
+
+  expect(screen.getByText('Loading...')).toBeInTheDocument();
+  expect(screen.queryByRole('region')).not.toBeInTheDocument();
+});
+
+test('renders "Not set" when pod has no containers', () => {
+  const emptyPod: PodInfoUI = {
+    ...fakePod,
+    containers: [],
+  };
+
+  render(PodmanPodDetailsSummary, { pod: emptyPod });
+
+  expect(screen.getByText('Not set')).toBeInTheDocument();
+});
+
+test('renders formatted date for created field', () => {
+  render(PodmanPodDetailsSummary, { pod: fakePod });
+
+  // FormattedDate with relative prop renders a <time> element
+  const timeElement = screen.getByRole('region', { name: 'Details' }).querySelector('time');
+  expect(timeElement).toBeInTheDocument();
 });

@@ -19,10 +19,14 @@
 import '@testing-library/jest-dom/vitest';
 
 import { render, screen } from '@testing-library/svelte';
-import { expect, test } from 'vitest';
+import { expect, test, vi } from 'vitest';
 
 import VolumeDetailsSummary from './VolumeDetailsSummary.svelte';
 import type { VolumeInfoUI } from './VolumeInfoUI';
+
+vi.mock(import('humanize-duration'), () => ({
+  default: vi.fn((): string => '3 hours'),
+}));
 
 const fakeVolume: VolumeInfoUI = {
   name: 'fakeVolume1',
@@ -61,8 +65,7 @@ test('VolumeDetailsSummary renders with VolumeInfoUI object', async () => {
   expect(screen.getByText('some-path')).toBeInTheDocument();
   expect(screen.getByText('local1')).toBeInTheDocument();
   expect(screen.getByText('local2')).toBeInTheDocument();
-  expect(screen.getByText('used')).toBeInTheDocument();
-  expect(screen.getByText(new Date(fakeVolume.created).toString())).toBeInTheDocument();
+  expect(screen.getByText('Used')).toBeInTheDocument();
   expect(screen.getByText('name1 name2 name3')).toBeInTheDocument();
   expect(screen.getByText('name11 name12 name13')).toBeInTheDocument();
   expect(screen.getByText('container1')).toBeInTheDocument();

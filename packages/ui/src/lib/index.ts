@@ -43,6 +43,12 @@ import EmptyScreen from './screen/EmptyScreen.svelte';
 import FilteredEmptyScreen from './screen/FilteredEmptyScreen.svelte';
 import SettingsNavItem from './settingsNavItem/SettingsNavItem.svelte';
 import StatusIcon from './statusIcon/StatusIcon.svelte';
+import FormattedDate from './summary/FormattedDate.svelte';
+import LabelGroup from './summary/LabelGroup.svelte';
+import StatusBadge from './summary/StatusBadge.svelte';
+import SummaryField from './summary/SummaryField.svelte';
+import SummaryGrid from './summary/SummaryGrid.svelte';
+import SummarySection from './summary/SummarySection.svelte';
 import Tab from './tab/Tab.svelte';
 import TableDurationColumn from './table/DurationColumn.svelte';
 import TableSimpleColumn from './table/SimpleColumn.svelte';
@@ -66,8 +72,10 @@ export {
   ErrorMessage,
   Expandable,
   FilteredEmptyScreen,
+  FormattedDate,
   FormPage,
   Input,
+  LabelGroup,
   LinearProgress,
   Link,
   ListOrganizer,
@@ -79,7 +87,11 @@ export {
   SearchInput,
   SettingsNavItem,
   Spinner,
+  StatusBadge,
   StatusIcon,
+  SummaryField,
+  SummaryGrid,
+  SummarySection,
   Tab,
   Table,
   TableColumn,

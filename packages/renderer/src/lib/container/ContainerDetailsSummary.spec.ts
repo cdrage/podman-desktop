@@ -25,6 +25,10 @@ import { beforeEach, expect, test, vi } from 'vitest';
 import ContainerDetailsSummary from './ContainerDetailsSummary.svelte';
 import { ContainerGroupInfoTypeUI, type ContainerInfoUI } from './ContainerInfoUI';
 
+vi.mock(import('humanize-duration'), () => ({
+  default: vi.fn((): string => '3 hours'),
+}));
+
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(window.openExternal).mockResolvedValue(undefined);
@@ -92,34 +96,26 @@ const fakeStandaloneContainer: ContainerInfoUI = {
   imageBase64RepoTag: 'fakeRepoTag',
 };
 
-// Test render ContainerDetailsSummary with ContainerInfoUI object with a pod group
 test('ContainerDetailsSummary renders with ContainerInfoUI object with a pod group', async () => {
-  // Render
   render(ContainerDetailsSummary, { container: fakePodContainer });
 
-  // Check that the rendered text is correct
   expect(screen.getByText('fakePodContainer')).toBeInTheDocument();
   expect(screen.getByText('image1')).toBeInTheDocument();
-  expect(screen.getAllByText(new Date(fakePodContainer.startedAt).toString())[0]).toBeInTheDocument();
-  expect(screen.getByText('N/A')).toBeInTheDocument();
+  expect(screen.getByText('None')).toBeInTheDocument();
   expect(screen.getByText('pod')).toBeInTheDocument();
-  expect(screen.getAllByText('running')[0]).toBeInTheDocument();
+  expect(screen.getAllByText('Running')[0]).toBeInTheDocument();
   expect(screen.getByText('group1')).toBeInTheDocument();
   expect(screen.getByText('pod1')).toBeInTheDocument();
 });
 
-// Test render ContainerDetailsSummary with standalone ContainerInfoUI object
 test('ContainerDetailsSummary renders with standalone ContainerInfoUI object', async () => {
-  // Render
   render(ContainerDetailsSummary, { container: fakeStandaloneContainer });
 
-  // Check that the rendered text is correct
   expect(screen.getByText('fakeStandaloneContainer')).toBeInTheDocument();
   expect(screen.getByText('image2')).toBeInTheDocument();
-  expect(screen.getByText(new Date(fakeStandaloneContainer.startedAt).toString())).toBeInTheDocument();
-  expect(screen.getByText('N/A')).toBeInTheDocument();
+  expect(screen.getByText('None')).toBeInTheDocument();
   expect(screen.getByText('standalone')).toBeInTheDocument();
-  expect(screen.getByText('running')).toBeInTheDocument();
+  expect(screen.getByText('Running')).toBeInTheDocument();
   expect(screen.getByText('group2')).toBeInTheDocument();
 });
 
@@ -156,4 +152,26 @@ test('port link shows tooltip with full URL and external link icon', async () =>
 
   const tooltipTrigger = portLink.closest('[data-testid="tooltip-trigger"]');
   expect(tooltipTrigger).toBeInTheDocument();
+});
+
+test('renders status badge for running state', () => {
+  render(ContainerDetailsSummary, { container: fakePodContainer });
+  const statusBadge = screen.getAllByRole('status');
+  expect(statusBadge.length).toBeGreaterThan(0);
+});
+
+test('renders labels as pills', () => {
+  render(ContainerDetailsSummary, { container: fakePodContainer });
+  expect(screen.getByLabelText('label1=label1')).toBeInTheDocument();
+});
+
+test('does not render labels section when empty', () => {
+  render(ContainerDetailsSummary, { container: fakeStandaloneContainer });
+  expect(screen.queryByText('Labels')).not.toBeInTheDocument();
+});
+
+test('renders summary sections', () => {
+  render(ContainerDetailsSummary, { container: fakePodContainer });
+  expect(screen.getByRole('region', { name: 'Details' })).toBeInTheDocument();
+  expect(screen.getByRole('region', { name: 'Group' })).toBeInTheDocument();
 });
