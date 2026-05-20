@@ -13,7 +13,7 @@ import { ExtensionsUtils } from './extensions-utils';
 // restricted category to display
 export let category: string | undefined = undefined;
 export let keywords: string[] = [];
-export let title = 'Available extensions';
+export let title = '';
 export let showEmptyScreen: boolean = true;
 export let oninstall: (extensionId: string) => void = () => {};
 export let ondetails: (extensionId: string) => void = () => {};

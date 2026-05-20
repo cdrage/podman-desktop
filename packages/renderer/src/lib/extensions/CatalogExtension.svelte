@@ -1,5 +1,5 @@
 <script lang="ts">
-import { faCheckCircle, faCircleInfo } from '@fortawesome/free-solid-svg-icons';
+import { faCheckCircle, faChevronRight } from '@fortawesome/free-solid-svg-icons';
 import { Button } from '@podman-desktop/ui-svelte';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 import { router } from 'tinro';
@@ -16,68 +16,62 @@ function openExtensionDetails(): void {
   ondetails(catalogExtensionUI.id);
   router.goto(`/extensions/details/${catalogExtensionUI.id}/`);
 }
+
+function stopPropagation(e: MouseEvent): void {
+  e.stopPropagation();
+}
 </script>
 
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div
-  class="rounded-lg border border-[var(--pd-content-bg)] flex flex-col bg-[var(--pd-content-card-bg)] hover:border-[var(--pd-content-card-border-selected)] min-h-32 max-h-32"
+  class="flex items-center gap-4 px-4 py-3 hover:bg-[var(--pd-content-card-bg)] cursor-pointer transition-colors {catalogExtensionUI.isFeatured ? 'border-l-2 border-l-[var(--pd-badge-purple)]' : 'border-l-2 border-l-transparent'}"
   role="group"
-  aria-label={catalogExtensionUI.displayName}>
-  <!-- if featured need to display a top banner -->
+  aria-label={catalogExtensionUI.displayName}
+  on:click={openExtensionDetails}>
 
-  {#if catalogExtensionUI.isFeatured}
-    <div class="bg-[var(--pd-badge-purple)] text-[var(--pd-card-header-text)] rounded-t-md px-2 text-sm min-h-6 flex flex-row items-center">
-      Featured
-    </div>
-  {/if}
+  <img
+    src={catalogExtensionUI.iconHref}
+    alt="{catalogExtensionUI.displayName} logo"
+    class="w-10 h-10 rounded-md object-contain flex-shrink-0" />
 
-  <div class="p-3 h-full w-full flex flex-col justify-start">
-    <div class="flex flex-row w-full">
-      <div class="w-3/4 flex flex-col">
-        <div class="flex flex-col w-full">
-          <div class="flex-row flex items-center">
-            <img
-              src={catalogExtensionUI.iconHref}
-              alt="{catalogExtensionUI.displayName} logo"
-              class="mr-2 max-w-10 max-h-10 object-contain" />
-
-            <div>
-              <div class="line-clamp-2 leading-4 max-h-8 text-[var(--pd-content-header)]">
-                {catalogExtensionUI.displayName}
-              </div>
-              <div class="pt-2 text-[var(--pd-content-text)] line-clamp-1">
-                {catalogExtensionUI.shortDescription}
-              </div>
-            </div>
-          </div>
-          <div class="pt-1 text-[var(--pd-content-text)] text-sm">{catalogExtensionUI.publisherDisplayName}</div>
-        </div>
-      </div>
-
-      {#if catalogExtensionUI.isInstalled}
-        <div class="flex flex-1 text-[var(--pd-invert-content-info-icon)] p-1 justify-items-end flex-row place-content-end items-center">
-          <Icon class="ml-1.5 mr-2" size="1.1x" icon={faCheckCircle} />
-          <div class="uppercase text-sm cursor-default">Already installed</div>
-        </div>
-      {:else if catalogExtensionUI.fetchable}
-        <div class="flex flex-1 justify-items-end w-18 flex-col items-end place-content-center">
-          <FeaturedExtensionDownload oninstall={oninstall} extension={catalogExtensionUI} />
-        </div>
+  <div class="flex-1 min-w-0">
+    <div class="flex items-center gap-2">
+      <span class="font-medium text-[var(--pd-content-header)] truncate">{catalogExtensionUI.displayName}</span>
+      {#if catalogExtensionUI.isFeatured}
+        <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-[var(--pd-badge-purple)] text-[var(--pd-card-header-text)] uppercase tracking-wider">Featured</span>
       {/if}
     </div>
-    <div class="items-end flex flex-1">
-      <div class="text-[var(--pd-content-text)] text-sm">
-        v{catalogExtensionUI.fetchVersion}
-        {#if catalogExtensionUI.installedVersion && catalogExtensionUI.installedVersion !== catalogExtensionUI.fetchVersion}
-          <span>(installed: v{catalogExtensionUI.installedVersion})</span>
-        {/if}
-      </div>
-      <div class="flex flex-1 justify-end items-center">
-        <Button
-          type="link"
-          icon={faCircleInfo}
-          aria-label="{catalogExtensionUI.displayName} details"
-          on:click={openExtensionDetails}>More details</Button>
-      </div>
+    <div class="text-sm text-[var(--pd-content-text)] truncate mt-0.5">
+      <span>{catalogExtensionUI.publisherDisplayName}</span>
+      <span class="mx-1.5 opacity-40">&middot;</span>
+      <span>{catalogExtensionUI.shortDescription}</span>
     </div>
+  </div>
+
+  <div class="text-xs text-[var(--pd-content-text)] flex-shrink-0 text-right">
+    v{catalogExtensionUI.fetchVersion}
+    {#if catalogExtensionUI.installedVersion && catalogExtensionUI.installedVersion !== catalogExtensionUI.fetchVersion}
+      <span>(installed: v{catalogExtensionUI.installedVersion})</span>
+    {/if}
+  </div>
+
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="flex items-center gap-2 flex-shrink-0" on:click={stopPropagation}>
+    {#if catalogExtensionUI.isInstalled}
+      <div class="flex items-center gap-1.5 text-[var(--pd-invert-content-info-icon)]">
+        <Icon size="1x" icon={faCheckCircle} />
+        <span class="text-xs uppercase whitespace-nowrap">Already installed</span>
+      </div>
+    {:else if catalogExtensionUI.fetchable}
+      <FeaturedExtensionDownload oninstall={oninstall} extension={catalogExtensionUI} />
+    {/if}
+
+    <Button
+      type="link"
+      icon={faChevronRight}
+      aria-label="{catalogExtensionUI.displayName} details"
+      on:click={openExtensionDetails} />
   </div>
 </div>

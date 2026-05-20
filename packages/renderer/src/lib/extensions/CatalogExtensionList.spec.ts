@@ -63,10 +63,6 @@ const extensionB: CatalogExtensionInfoUI = {
 test('Check with empty', async () => {
   render(CatalogExtensionList, { catalogExtensions: [] });
 
-  // no 'Available extensions' text
-  const availableExtensions = screen.queryByText('Available extensions');
-  expect(availableExtensions).not.toBeInTheDocument();
-
   // check we have the empty screen and the button to refresh the catalog
   const emptyScreen = screen.getByText('No extensions in the catalog');
   expect(emptyScreen).toBeInTheDocument();
@@ -96,33 +92,30 @@ test('Check with empty', async () => {
 test('Check with 2 extensions', async () => {
   render(CatalogExtensionList, { catalogExtensions: [extensionA, extensionB] });
 
-  // 'Available extensions' text
-  const availableExtensions = screen.queryByText('Available extensions');
-  expect(availableExtensions).toBeInTheDocument();
+  // get table role with aria-label 'catalog-extension'
+  const table = screen.getByRole('table', { name: 'catalog-extension' });
+  expect(table).toBeInTheDocument();
 
-  // get region role with text 'Catalog Extensions'
-  const region = screen.getByRole('region', { name: 'Catalog Extensions' });
-  expect(region).toBeInTheDocument();
+  // get rows using aria-label
+  const extensionRowA = screen.getByRole('row', { name: 'This is the display name1' });
+  expect(extensionRowA).toBeInTheDocument();
 
-  // get div using aria-label 'This is the display name1'
-  const extensionWidgetA = screen.getByRole('group', { name: 'This is the display name1' });
-  expect(extensionWidgetA).toBeInTheDocument();
-
-  const extensionWidgetB = screen.getByRole('group', { name: 'This is the display name2' });
-  expect(extensionWidgetB).toBeInTheDocument();
-
-  // expect to see the refresh button
-  const refreshButton = screen.getByRole('button', { name: 'Refresh the catalog' });
-  expect(refreshButton).toBeInTheDocument();
+  const extensionRowB = screen.getByRole('row', { name: 'This is the display name2' });
+  expect(extensionRowB).toBeInTheDocument();
 });
 
-test('non default title', async () => {
+test('custom title is displayed', async () => {
   render(CatalogExtensionList, { title: 'Another title', catalogExtensions: [extensionA, extensionB] });
-  const availableExtensions = screen.queryByText('Available extensions');
-  expect(availableExtensions).not.toBeInTheDocument();
 
   const title = screen.queryByText('Another title');
   expect(title).toBeInTheDocument();
+});
+
+test('no title shown by default', async () => {
+  render(CatalogExtensionList, { catalogExtensions: [extensionA, extensionB] });
+
+  const title = screen.queryByText('Available extensions');
+  expect(title).not.toBeInTheDocument();
 });
 
 test('empty catalog, do not hide if empty (default)', async () => {

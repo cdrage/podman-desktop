@@ -111,7 +111,7 @@ test('Expect to see extensions', async () => {
   expect(myExtension1).toBeInTheDocument();
 
   // second extension should not be there as only in catalog (not installed)
-  const extensionIdB = screen.queryByRole('group', { name: 'B Extension' });
+  const extensionIdB = screen.queryByRole('row', { name: 'B Extension' });
   expect(extensionIdB).not.toBeInTheDocument();
 
   // click on the catalog
@@ -119,7 +119,7 @@ test('Expect to see extensions', async () => {
   await fireEvent.click(catalogTab);
 
   // now the catalog extension should be there
-  const extensionIdBAfterSwitch = screen.getByRole('group', { name: 'B Extension' });
+  const extensionIdBAfterSwitch = screen.getByRole('row', { name: 'B Extension' });
   expect(extensionIdBAfterSwitch).toBeInTheDocument();
 });
 
@@ -195,7 +195,7 @@ test('Search extension page searches also description', async () => {
   });
 
   // second extension should not be there as only in catalog (not installed) and doesn't have "bar" in the description
-  const extensionIdB = screen.queryByRole('group', { name: 'B Extension' });
+  const extensionIdB = screen.queryByRole('row', { name: 'B Extension' });
   expect(extensionIdB).not.toBeInTheDocument();
 
   cleanup();
@@ -229,11 +229,11 @@ test('Search catalog page searches also description', async () => {
   await fireEvent.click(catalogTab);
 
   // Verify that the extension containing "bar" in the description is displayed
-  const myExtension1 = screen.getByRole('group', { name: 'A Extension' });
+  const myExtension1 = screen.getByRole('row', { name: 'A Extension' });
   expect(myExtension1).toBeInTheDocument();
 
   // Verify that the other extension that doesn't contain "bar" is not displayed
-  const extensionIdB = screen.queryByRole('group', { name: 'B Extension' });
+  const extensionIdB = screen.queryByRole('row', { name: 'B Extension' });
   expect(extensionIdB).not.toBeInTheDocument();
 });
 
@@ -279,7 +279,7 @@ test('Switching tabs keeps only terms in search term', async () => {
 
   // Verify that the extension containing "bar" in the description is displayed (which is not in bar category and is installed)
   // meaning that `category:bar not:installed` has been removed from search term
-  const myExtension1 = screen.getByRole('group', { name: 'A Extension' });
+  const myExtension1 = screen.getByRole('row', { name: 'A Extension' });
   expect(myExtension1).toBeInTheDocument();
 });
 

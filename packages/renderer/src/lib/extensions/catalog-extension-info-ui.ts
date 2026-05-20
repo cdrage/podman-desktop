@@ -30,4 +30,5 @@ export interface CatalogExtensionInfoUI {
   shortDescription: string;
   categories: string[];
   keywords: string[];
+  selected?: boolean;
 }

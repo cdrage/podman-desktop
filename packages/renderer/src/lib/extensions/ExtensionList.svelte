@@ -1,5 +1,5 @@
 <script lang="ts">
-import { faCloudDownload } from '@fortawesome/free-solid-svg-icons';
+import { faArrowsRotate, faCloudDownload } from '@fortawesome/free-solid-svg-icons';
 import { Button, FilteredEmptyScreen, NavPage } from '@podman-desktop/ui-svelte';
 
 import type { ExtensionListScreen } from '/@/lib/extensions/extension-list';
@@ -61,6 +61,25 @@ function closeModal(): void {
   installManualImageModal = false;
 }
 
+let refreshInProgress: boolean = $state(false);
+
+async function refreshCatalog(): Promise<void> {
+  refreshInProgress = true;
+  try {
+    await window.refreshCatalogExtensions();
+  } catch (error) {
+    await window.showMessageBox({
+      type: 'error',
+      title: 'Refresh Catalog Failed',
+      message: 'Failed to refresh the catalog',
+      detail: String(error),
+      buttons: ['Dismiss'],
+    });
+  } finally {
+    refreshInProgress = false;
+  }
+}
+
 let installManualImageModal: boolean = $state(false);
 
 function changeScreen(newScreen: 'installed' | 'catalog' | 'development'): void {
@@ -74,6 +93,15 @@ function changeScreen(newScreen: 'installed' | 'catalog' | 'development'): void 
 
 <NavPage bind:searchTerm={searchTerm} title="extensions">
   {#snippet additionalActions()}
+    {#if screen === 'catalog' && enableCatalog}
+      <Button
+        type="secondary"
+        on:click={refreshCatalog}
+        inProgress={refreshInProgress}
+        icon={faArrowsRotate}
+        title="Refresh the extension catalog"
+        aria-label="Refresh catalog">Refresh catalog</Button>
+    {/if}
     {#if enableCustomExtensions}
       <Button
         on:click={(): void => {

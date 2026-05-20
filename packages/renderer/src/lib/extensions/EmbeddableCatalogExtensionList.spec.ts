@@ -105,15 +105,13 @@ test('Check with defaults', async () => {
 
   render(EmbeddableCatalogExtensionList, {});
 
-  // 'Available extensions' text
-  const availableExtensions = screen.queryByText('Available extensions');
-  expect(availableExtensions).toBeInTheDocument();
+  // table should be rendered
 
   // we should have two extensions as we have no filters
-  const extensionA = screen.getByRole('group', { name: 'A Extension' });
+  const extensionA = screen.getByRole('row', { name: 'A Extension' });
   expect(extensionA).toBeInTheDocument();
 
-  const extensionB = screen.getByRole('group', { name: 'B Extension' });
+  const extensionB = screen.getByRole('row', { name: 'B Extension' });
   expect(extensionB).toBeInTheDocument();
 });
 
@@ -123,16 +121,14 @@ test('Check with a specific category', async () => {
 
   render(EmbeddableCatalogExtensionList, { category: 'Authentication' });
 
-  // 'Available extensions' text
-  const availableExtensions = screen.queryByText('Available extensions');
-  expect(availableExtensions).toBeInTheDocument();
+  // table should be rendered
 
   // we should have one extensions as we have filter on category
-  const extensionA = screen.getByRole('group', { name: 'A Extension' });
+  const extensionA = screen.getByRole('row', { name: 'A Extension' });
   expect(extensionA).toBeInTheDocument();
 
   // this one should not be there
-  const extensionB = screen.queryByRole('group', { name: 'B Extension' });
+  const extensionB = screen.queryByRole('row', { name: 'B Extension' });
   expect(extensionB).not.toBeInTheDocument();
 });
 
@@ -142,16 +138,14 @@ test('Check with a not displaying installed', async () => {
 
   render(EmbeddableCatalogExtensionList, { showInstalled: false });
 
-  // 'Available extensions' text
-  const availableExtensions = screen.queryByText('Available extensions');
-  expect(availableExtensions).toBeInTheDocument();
+  // table should be rendered
 
   // we should have one extension (A is installed and should not appear)
-  const extensionA = screen.queryByRole('group', { name: 'A Extension' });
+  const extensionA = screen.queryByRole('row', { name: 'A Extension' });
   expect(extensionA).not.toBeInTheDocument();
 
   // this one should be there
-  const extensionB = screen.queryByRole('group', { name: 'B Extension' });
+  const extensionB = screen.queryByRole('row', { name: 'B Extension' });
   expect(extensionB).toBeInTheDocument();
 });
 
@@ -161,15 +155,13 @@ test('Check with specific keywords common to both extensions', async () => {
 
   render(EmbeddableCatalogExtensionList, { keywords: ['key1', 'key2'] });
 
-  // 'Available extensions' text
-  const availableExtensions = screen.queryByText('Available extensions');
-  expect(availableExtensions).toBeInTheDocument();
+  // table should be rendered
 
   // we should have both extensions
-  const extensionA = screen.getByRole('group', { name: 'A Extension' });
+  const extensionA = screen.getByRole('row', { name: 'A Extension' });
   expect(extensionA).toBeInTheDocument();
 
-  const extensionB = screen.queryByRole('group', { name: 'B Extension' });
+  const extensionB = screen.queryByRole('row', { name: 'B Extension' });
   expect(extensionB).toBeInTheDocument();
 });
 
@@ -179,25 +171,21 @@ test('Check with a specific keyword set to one extensions only', async () => {
 
   render(EmbeddableCatalogExtensionList, { keywords: ['keyA'] });
 
-  // 'Available extensions' text
-  const availableExtensions = screen.queryByText('Available extensions');
-  expect(availableExtensions).toBeInTheDocument();
+  // table should be rendered
 
   // we should have extension A only
-  const extensionA = screen.getByRole('group', { name: 'A Extension' });
+  const extensionA = screen.getByRole('row', { name: 'A Extension' });
   expect(extensionA).toBeInTheDocument();
 
-  const extensionB = screen.queryByRole('group', { name: 'B Extension' });
+  const extensionB = screen.queryByRole('row', { name: 'B Extension' });
   expect(extensionB).not.toBeInTheDocument();
 });
 
-test('non default title', async () => {
+test('custom title', async () => {
   catalogExtensionInfos.set([aFakeExtension, bFakeExtension]);
   extensionInfos.set(combined);
 
   render(EmbeddableCatalogExtensionList, { title: 'Another title' });
-  const availableExtensions = screen.queryByText('Available extensions');
-  expect(availableExtensions).not.toBeInTheDocument();
 
   const title = screen.queryByText('Another title');
   expect(title).toBeInTheDocument();
@@ -229,9 +217,8 @@ test('render nothing when catalog is disabled', async () => {
   render(EmbeddableCatalogExtensionList, {});
 
   await vi.waitFor(() => {
-    expect(screen.queryByText('Available extensions')).not.toBeInTheDocument();
-    expect(screen.queryByRole('group', { name: 'A Extension' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('group', { name: 'B Extension' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('row', { name: 'A Extension' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('row', { name: 'B Extension' })).not.toBeInTheDocument();
   });
 });
 
@@ -243,6 +230,6 @@ test('render extensions when catalog is enabled', async () => {
   render(EmbeddableCatalogExtensionList, {});
 
   await vi.waitFor(() => {
-    expect(screen.queryByText('Available extensions')).toBeInTheDocument();
+    expect(screen.queryByRole('table', { name: 'catalog-extension' })).toBeInTheDocument();
   });
 });
