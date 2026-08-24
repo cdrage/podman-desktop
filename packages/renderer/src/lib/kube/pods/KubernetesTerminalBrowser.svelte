@@ -85,7 +85,7 @@ function handleSelectionChange(value: unknown): void {
 </div>
 
 <EmptyScreen
-  hidden={!currentContainerStatus.get(currentContainerName)}
+  hidden={currentContainerStatus.get(currentContainerName) === 'running'}
   icon={NoLogIcon}
   title="No Terminal"
   message="Container is not running" />

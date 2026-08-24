@@ -3,6 +3,7 @@ import type { StatusBarEntry } from '@podman-desktop/core-api';
 import { ExperimentalTasksSettings } from '@podman-desktop/core-api';
 import { onDestroy, onMount } from 'svelte';
 
+import HostTerminalToggle from '/@/lib/host-terminal/HostTerminalToggle.svelte';
 import TaskIndicator from '/@/lib/statusbar/TaskIndicator.svelte';
 import { isHighContrast } from '/@/stores/appearance';
 import { onDidChangeConfiguration } from '/@/stores/configurationProperties';
@@ -85,6 +86,7 @@ onDestroy(() => {
   aria-label="Status Bar"
   data-pd-force-theme={$isHighContrast ? 'hc-dark' : 'dark'}>
   <div class="flex flex-nowrap gap-x-1.5 h-full text-ellipsis whitespace-nowrap">
+    <HostTerminalToggle />
     {#if experimentalProvidersStatusBar}
       <Providers/>
     {/if}

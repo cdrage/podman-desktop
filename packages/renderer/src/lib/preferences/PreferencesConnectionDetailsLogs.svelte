@@ -111,7 +111,7 @@ onDestroy(() => {
 
 <div
   aria-label="terminal"
-  class="min-w-full flex flex-col bg-[var(--pd-terminal-background)] p-[5px] pr-0"
+  class="min-w-full flex flex-col items-center bg-[var(--pd-terminal-background)] p-[5px]"
   class:invisible={noLogs === true}
   class:h-0={noLogs === true}
   class:h-full={noLogs === false}

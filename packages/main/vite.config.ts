@@ -58,6 +58,7 @@ export default defineConfig({
         'ssh2',
         '@segment/analytics-node',
         'isomorphic-ws',
+        'node-pty',
         ...builtinModules.flatMap(p => [p, `node:${p}`]),
       ],
       output: {
