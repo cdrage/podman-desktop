@@ -80,6 +80,7 @@ allowBuilds:
   electron-winstaller: false
   esbuild: true
   msw: true
+  node-pty: true
   protobufjs: true
   sharp: true
   ssh2: false

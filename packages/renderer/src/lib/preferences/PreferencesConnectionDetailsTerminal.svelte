@@ -192,7 +192,7 @@ onDestroy(async () => {
 </script>
 
 <div
-  class="h-full p-[5px] pr-0 bg-[var(--pd-terminal-background)]"
+  class="h-full p-[5px] flex justify-center bg-[var(--pd-terminal-background)]"
   bind:this={terminalXtermDiv}
   class:hidden={connectionInfo.status !== 'started'}>
 </div>

@@ -238,7 +238,7 @@ async function onInstallationClick(): Promise<void> {
     </div>
 
     <div
-      class="bg-[var(--pd-terminal-background)] p-[5px] pr-0"
+      class="bg-[var(--pd-terminal-background)] p-[5px] flex justify-center"
       style="width: 100%; text-align: left; display: {initializeError ? 'block' : 'none'}"
       bind:this={logsXtermDiv}>
     </div>

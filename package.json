@@ -133,7 +133,7 @@
     "storybook:dev": "pnpm run storybook:css && cd storybook && pnpm run dev",
     "storybook:build": "pnpm run build:ui && pnpm run storybook:css && cd storybook && pnpm run build",
     "prepare": "husky install",
-    "postinstall": "pnpm run build:core-api"
+    "postinstall": "pnpm run build:core-api && node -e \"const p=require('path').join('node_modules','node-pty','prebuilds',process.platform+'-'+process.arch,'spawn-helper');try{require('fs').chmodSync(p,0o755)}catch{}\" || true"
   },
   "lint-staged": {
     "*.{js,ts,tsx,svelte}": [

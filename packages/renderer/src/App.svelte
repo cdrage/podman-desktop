@@ -40,6 +40,7 @@ import ExtensionDetails from './lib/extensions/ExtensionDetails.svelte';
 import ExtensionList from './lib/extensions/ExtensionList.svelte';
 import SendFeedback from './lib/feedback/SendFeedback.svelte';
 import HelpActions from './lib/help/HelpActions.svelte';
+import HostTerminalPanel from './lib/host-terminal/HostTerminalPanel.svelte';
 import BuildImageFromContainerfile from './lib/image/BuildImageFromContainerfile.svelte';
 import ImageDetails from './lib/image/ImageDetails.svelte';
 import ImagesList from './lib/image/ImagesList.svelte';
@@ -89,10 +90,43 @@ import Webview from './lib/webview/Webview.svelte';
 import WelcomePage from './lib/welcome/WelcomePage.svelte';
 import PreferencesNavigation from './PreferencesNavigation.svelte';
 import Route from './Route.svelte';
+import {
+  activeHostTerminalTabId,
+  addTerminalTab,
+  getNextTabId,
+  hostTerminalPanelVisible,
+  hostTerminalTabs,
+  removeTerminalTab,
+} from './stores/host-terminal-store';
 import { navigationRegistry } from './stores/navigation/navigation-registry';
 import SubmenuNavigation from './SubmenuNavigation.svelte';
 
 router.mode.memory();
+
+function handleGlobalKeydown(e: KeyboardEvent): void {
+  if ((e.ctrlKey || e.metaKey) && e.key === '`') {
+    e.preventDefault();
+    hostTerminalPanelVisible.update(v => !v);
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 't') {
+    e.preventDefault();
+    hostTerminalPanelVisible.set(true);
+    addTerminalTab(getNextTabId());
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+    let activeId: number | undefined;
+    activeHostTerminalTabId.subscribe(id => (activeId = id))();
+    if (activeId !== undefined) {
+      e.preventDefault();
+      removeTerminalTab(activeId);
+      let remaining: number;
+      hostTerminalTabs.subscribe(tabs => (remaining = tabs.length))();
+      if (remaining! === 0) {
+        hostTerminalPanelVisible.set(false);
+      }
+    }
+  }
+}
 
 const LAST_ROUTE_KEY = 'last-route';
 const SETTINGS_PAGE_KEY = 'settings-page';
@@ -165,6 +199,8 @@ window.events?.receive('kubernetes-navigation', (args: unknown) => {
 tablePersistence.storage = new PodmanDesktopStoragePersist();
 </script>
 
+<svelte:window onkeydown={handleGlobalKeydown} />
+
 <Route path="/*" breadcrumb="Home" let:meta>
   <main class="flex flex-col w-screen h-screen overflow-hidden">
     <IconsStyle />
@@ -174,7 +210,7 @@ tablePersistence.storage = new PodmanDesktopStoragePersist();
 
     <WelcomePage />
 
-    <div class="flex flex-row w-full h-full overflow-hidden">
+    <div class="flex flex-row w-full flex-1 min-h-0 overflow-hidden">
       <QuickPickInput />
       <CustomPick />
       <MessageBox />
@@ -196,6 +232,7 @@ tablePersistence.storage = new PodmanDesktopStoragePersist();
         <SendFeedback />
         <ToastHandler />
         <ToastTaskNotifications />
+        <div class="flex flex-col flex-1 min-h-0 overflow-auto">
         <Route path="/" breadcrumb="Dashboard Page" navigationHint="root">
           <DashboardPage />
         </Route>
@@ -478,6 +515,8 @@ tablePersistence.storage = new PodmanDesktopStoragePersist();
             <ExtensionDetails extensionId={meta.params.id} />
           </Route>
         </Route>
+        </div>
+        <HostTerminalPanel />
       </div>
     </div>
     <HelpActions/>

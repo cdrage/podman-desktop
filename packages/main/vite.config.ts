@@ -59,6 +59,7 @@ export default defineConfig({
         '@segment/analytics-node',
         'express',
         'isomorphic-ws',
+        'node-pty',
         ...builtinModules.flatMap(p => [p, `node:${p}`]),
       ],
       output: {
