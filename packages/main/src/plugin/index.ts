@@ -250,6 +250,7 @@ import { NotificationRegistry } from './tasks/notification-registry.js';
 import { ProgressImpl } from './tasks/progress-impl.js';
 import { CIDetection } from './telemetry/ci-detection.js';
 import { EventType, Telemetry } from './telemetry/telemetry.js';
+import { AgentDetectionService } from './agent-detection-service.js';
 import { HostTerminalService } from './host-terminal-service.js';
 import { TerminalInit } from './terminal-init.js';
 import { TrayIconColor } from './tray-icon-color.js';
@@ -736,6 +737,9 @@ export class PluginSystem {
 
     container.bind<HostTerminalService>(HostTerminalService).toSelf().inSingletonScope();
     const hostTerminalService = container.get<HostTerminalService>(HostTerminalService);
+
+    container.bind<AgentDetectionService>(AgentDetectionService).toSelf().inSingletonScope();
+    const agentDetectionService = container.get<AgentDetectionService>(AgentDetectionService);
 
     container.bind<Welcome>(Welcome).toSelf().inSingletonScope();
     const welcome = container.get<Welcome>(Welcome);
@@ -1581,9 +1585,12 @@ export class PluginSystem {
       },
     );
 
-    this.ipcHandle('host-terminal:create', async (_listener, callbackId: number): Promise<number> => {
-      return hostTerminalService.create(this.getWebContentsSender(), callbackId);
-    });
+    this.ipcHandle(
+      'host-terminal:create',
+      async (_listener, callbackId: number, options?: { command?: string }): Promise<number> => {
+        return hostTerminalService.create(this.getWebContentsSender(), callbackId, options);
+      },
+    );
 
     this.ipcHandle('host-terminal:write', async (_listener, id: number, data: string): Promise<void> => {
       hostTerminalService.write(id, data);
@@ -1595,6 +1602,10 @@ export class PluginSystem {
 
     this.ipcHandle('host-terminal:close', async (_listener, id: number): Promise<void> => {
       hostTerminalService.close(id);
+    });
+
+    this.ipcHandle('host-terminal:detectAgents', async () => {
+      return agentDetectionService.detectAgents();
     });
 
     const containerProviderRegistryAttachContainerSendCallback = new Map<number, (param: string) => void>();
