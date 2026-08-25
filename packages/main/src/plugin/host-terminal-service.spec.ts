@@ -147,6 +147,20 @@ describe('HostTerminalService', () => {
     expect(mockPty.kill).toHaveBeenCalledTimes(2);
   });
 
+  test('create with command option spawns the specified binary with no args', async () => {
+    const service = new HostTerminalService();
+    service.create(mockWebContents as unknown as WebContents, 1, { command: '/usr/local/bin/claude' });
+
+    const nodePty = await import('node-pty');
+    expect(nodePty.spawn).toHaveBeenCalledWith(
+      '/usr/local/bin/claude',
+      [],
+      expect.objectContaining({
+        name: 'xterm-256color',
+      }),
+    );
+  });
+
   test('does not send to destroyed webContents', () => {
     mockWebContents.isDestroyed.mockReturnValue(true);
     const service = new HostTerminalService();

@@ -839,10 +839,14 @@ export function initExposure(): void {
 
   contextBridge.exposeInMainWorld(
     'hostTerminalCreate',
-    async (onData: (data: string) => void, onExit: (exitCode: number) => void): Promise<number> => {
+    async (
+      onData: (data: string) => void,
+      onExit: (exitCode: number) => void,
+      options?: { command?: string },
+    ): Promise<number> => {
       hostTerminalCallbackId++;
       hostTerminalCallbacks.set(hostTerminalCallbackId, { onData, onExit });
-      return ipcInvoke('host-terminal:create', hostTerminalCallbackId);
+      return ipcInvoke('host-terminal:create', hostTerminalCallbackId, options);
     },
   );
 
@@ -860,6 +864,13 @@ export function initExposure(): void {
   contextBridge.exposeInMainWorld('hostTerminalClose', async (id: number): Promise<void> => {
     return ipcInvoke('host-terminal:close', id);
   });
+
+  contextBridge.exposeInMainWorld(
+    'hostTerminalDetectAgents',
+    async (): Promise<{ binary: string; path: string; label: string }[]> => {
+      return ipcInvoke('host-terminal:detectAgents');
+    },
+  );
 
   ipcRenderer.on('host-terminal:onData', (_, id: number, data: string) => {
     const callback = hostTerminalCallbacks.get(id);

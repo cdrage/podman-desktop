@@ -21,6 +21,8 @@ import { writable } from 'svelte/store';
 export interface HostTerminalTab {
   id: number;
   name: string;
+  agentCommand?: string;
+  initialContext?: string;
 }
 
 export const hostTerminalTabs = writable<HostTerminalTab[]>([]);
@@ -39,9 +41,17 @@ export function getNextTabId(): number {
   return nextTabId++;
 }
 
-export function addTerminalTab(id: number): void {
+export function addTerminalTab(
+  id: number,
+  options?: { name?: string; agentCommand?: string; initialContext?: string },
+): void {
   tabCounter++;
-  const tab: HostTerminalTab = { id, name: `Terminal ${tabCounter}` };
+  const tab: HostTerminalTab = {
+    id,
+    name: options?.name ?? `Terminal ${tabCounter}`,
+    agentCommand: options?.agentCommand,
+    initialContext: options?.initialContext,
+  };
   hostTerminalTabs.update(tabs => [...tabs, tab]);
   activeHostTerminalTabId.set(id);
 }

@@ -51,9 +51,9 @@ export class HostTerminalService {
     return ['-l'];
   }
 
-  create(webContents: WebContents, callbackId: number): number {
-    const shell = this.getDefaultShell();
-    const args = this.getLoginArgs(shell);
+  create(webContents: WebContents, callbackId: number, options?: { command?: string }): number {
+    const shell = options?.command ?? this.getDefaultShell();
+    const args = options?.command ? [] : this.getLoginArgs(shell);
 
     const pty = spawn(shell, args, {
       name: 'xterm-256color',
