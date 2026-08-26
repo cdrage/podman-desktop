@@ -46,6 +46,14 @@ agentWorkingDirectory.subscribe(d => {
   }
 });
 
+const FOLLOW_UI_KEY = 'host-terminal-follow-ui';
+export const agentFollowUI = writable<boolean>(localStorage.getItem(FOLLOW_UI_KEY) === 'true');
+agentFollowUI.subscribe(v => localStorage.setItem(FOLLOW_UI_KEY, String(v)));
+
+const INCLUDE_CONTEXT_KEY = 'host-terminal-include-context';
+export const agentIncludeContext = writable<boolean>(localStorage.getItem(INCLUDE_CONTEXT_KEY) === 'true');
+agentIncludeContext.subscribe(v => localStorage.setItem(INCLUDE_CONTEXT_KEY, String(v)));
+
 let tabCounter = 0;
 let nextTabId = 1;
 

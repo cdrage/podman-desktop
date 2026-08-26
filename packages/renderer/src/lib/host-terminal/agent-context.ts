@@ -21,15 +21,31 @@ import { get } from 'svelte/store';
 
 import { currentPage } from '/@/stores/breadcrumb';
 
-const STATIC_PREAMBLE = `You are being launched from the built-in terminal in Podman Desktop, an open-source desktop application for managing containers, images, pods, volumes, and Kubernetes clusters.
+const MCP_PORT = 6110;
+const MCP_URL = `http://localhost:${MCP_PORT}/mcp`;
 
-You have direct access to the host system. The \`podman\` CLI is fully compatible with Docker — you can run any podman command directly (ps, logs, exec, build, run, etc.). Podman also provides a Docker-compatible socket, so \`docker\` CLI commands work as well.
+const CLI_PREAMBLE = `You are being launched from the built-in terminal in Podman Desktop, an open-source desktop application for managing containers, images, pods, and volumes.
+
+You have direct access to the host system. The \`podman\` CLI is fully compatible with Docker — you can run any podman command directly (ps, logs, exec, build, run, etc.). Podman provides a Docker-compatible socket, so \`docker\` CLI commands work as well.
 
 \`podman compose\` is available for multi-container applications — it uses the \`docker-compose\` binary underneath, automatically passing the Podman socket. \`docker compose\` also works.
 
+For Kubernetes, use \`kubectl\` directly or \`oc\` for OpenShift clusters.
+
 Podman Desktop has a plugin-based extension system. Extensions provide container engines (Podman, Docker, CRC), Kubernetes providers (Kind, Minikube), and additional functionality. Installed extensions are listed below.
 
-An MCP server extension may be available at http://localhost:6110/mcp for structured programmatic access to Podman Desktop resources via the Model Context Protocol.
+Below is a snapshot of the current Podman Desktop state:
+`;
+
+const MCP_PREAMBLE = `You are being launched from the built-in terminal in Podman Desktop. A Podman Desktop MCP server is running at ${MCP_URL}.
+
+PREFERRED: Use the MCP server for container, image, pod, and volume operations. MCP tools return structured data and enable "Follow UI" — Podman Desktop auto-navigates to show results of your actions (for example, container logs after a start, the build page during an image build).
+
+FALLBACK: If MCP is unavailable, use the \`podman\` CLI directly. It is fully compatible with Docker. \`podman compose\` and \`docker compose\` also work.
+
+For Kubernetes, use \`kubectl\` directly or \`oc\` for OpenShift clusters.
+
+Podman Desktop has a plugin-based extension system. Installed extensions are listed below.
 
 Below is a snapshot of the current Podman Desktop state:
 `;
@@ -50,11 +66,11 @@ function getPageContext(path: string, containers: ContainerInfo[]): string[] {
       }
       const tab = path.split('/').pop();
       if (tab === 'logs') {
-        lines.push('  Tab: Logs — user is looking at this container\'s log output');
+        lines.push('  Tab: Logs');
       } else if (tab === 'terminal') {
-        lines.push('  Tab: Terminal — user has a shell into this container');
+        lines.push('  Tab: Terminal');
       } else if (tab === 'inspect') {
-        lines.push('  Tab: Inspect — user is viewing container configuration');
+        lines.push('  Tab: Inspect');
       }
     }
     return lines;
@@ -81,8 +97,23 @@ function getPageContext(path: string, containers: ContainerInfo[]): string[] {
   return lines;
 }
 
-export async function gatherAgentContext(cwd?: string): Promise<string> {
-  const lines: string[] = [STATIC_PREAMBLE];
+async function isMcpServerRunning(): Promise<boolean> {
+  const providers = await window.getProviderInfos();
+  for (const p of providers) {
+    if (p.id !== 'mcp') {
+      continue;
+    }
+    const running = p.vmConnections?.some(c => c.status === 'started');
+    if (running) {
+      return true;
+    }
+  }
+  return false;
+}
+
+export async function gatherAgentContext(cwd?: string, followUI?: boolean): Promise<string> {
+  const useMcp = followUI === true && (await isMcpServerRunning());
+  const lines: string[] = [useMcp ? MCP_PREAMBLE : CLI_PREAMBLE];
 
   const page = get(currentPage);
   if (page?.name) {
@@ -121,15 +152,13 @@ export async function gatherAgentContext(cwd?: string): Promise<string> {
     lines.push(`Containers: ${running} running, ${stopped} stopped (${containers.length} total)`);
 
     const failing = containers.filter(c => c.State === 'exited' || c.State === 'dead' || c.State === 'restarting');
-    if (failing.length > 0) {
-      for (const c of failing.slice(0, 5)) {
-        const name = c.Names?.[0] ?? c.Id.substring(0, 12);
-        const status = c.Status ? ` (${c.Status})` : '';
-        lines.push(`  warning: ${name}: ${c.State}${status}`);
-      }
-      if (failing.length > 5) {
-        lines.push(`  ... and ${failing.length - 5} more`);
-      }
+    for (const c of failing.slice(0, 5)) {
+      const name = c.Names?.[0] ?? c.Id.substring(0, 12);
+      const status = c.Status ? ` (${c.Status})` : '';
+      lines.push(`  warning: ${name}: ${c.State}${status}`);
+    }
+    if (failing.length > 5) {
+      lines.push(`  ... and ${failing.length - 5} more`);
     }
   } else {
     lines.push('Containers: none');
@@ -140,10 +169,8 @@ export async function gatherAgentContext(cwd?: string): Promise<string> {
     lines.push(`Pods: ${running} running (${pods.length} total)`);
 
     const failing = pods.filter(p => p.Status !== 'Running' && p.Status !== 'Created');
-    if (failing.length > 0) {
-      for (const p of failing.slice(0, 5)) {
-        lines.push(`  warning: ${p.Name}: ${p.Status}`);
-      }
+    for (const p of failing.slice(0, 5)) {
+      lines.push(`  warning: ${p.Name}: ${p.Status}`);
     }
   }
 
