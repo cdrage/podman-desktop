@@ -842,7 +842,7 @@ export function initExposure(): void {
     async (
       onData: (data: string) => void,
       onExit: (exitCode: number) => void,
-      options?: { command?: string },
+      options?: { command?: string; args?: string[]; cwd?: string },
     ): Promise<number> => {
       hostTerminalCallbackId++;
       hostTerminalCallbacks.set(hostTerminalCallbackId, { onData, onExit });

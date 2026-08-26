@@ -22,7 +22,8 @@ export interface HostTerminalTab {
   id: number;
   name: string;
   agentCommand?: string;
-  initialContext?: string;
+  agentArgs?: string[];
+  cwd?: string;
 }
 
 export const hostTerminalTabs = writable<HostTerminalTab[]>([]);
@@ -34,6 +35,17 @@ const storedHeight = sessionStorage.getItem(HEIGHT_KEY);
 export const hostTerminalPanelHeight = writable<number>(storedHeight ? parseInt(storedHeight, 10) : 300);
 hostTerminalPanelHeight.subscribe(h => sessionStorage.setItem(HEIGHT_KEY, String(h)));
 
+const CWD_KEY = 'host-terminal-working-directory';
+const storedCwd = localStorage.getItem(CWD_KEY);
+export const agentWorkingDirectory = writable<string | undefined>(storedCwd ?? undefined);
+agentWorkingDirectory.subscribe(d => {
+  if (d) {
+    localStorage.setItem(CWD_KEY, d);
+  } else {
+    localStorage.removeItem(CWD_KEY);
+  }
+});
+
 let tabCounter = 0;
 let nextTabId = 1;
 
@@ -43,14 +55,15 @@ export function getNextTabId(): number {
 
 export function addTerminalTab(
   id: number,
-  options?: { name?: string; agentCommand?: string; initialContext?: string },
+  options?: { name?: string; agentCommand?: string; agentArgs?: string[]; cwd?: string },
 ): void {
   tabCounter++;
   const tab: HostTerminalTab = {
     id,
     name: options?.name ?? `Terminal ${tabCounter}`,
     agentCommand: options?.agentCommand,
-    initialContext: options?.initialContext,
+    agentArgs: options?.agentArgs,
+    cwd: options?.cwd,
   };
   hostTerminalTabs.update(tabs => [...tabs, tab]);
   activeHostTerminalTabId.set(id);

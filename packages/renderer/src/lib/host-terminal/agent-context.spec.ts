@@ -16,13 +16,13 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { ContainerInfo, ProviderInfo, VolumeListInfo } from '@podman-desktop/api';
+import type { ContainerInfo, ExtensionInfo, ProviderInfo, VolumeListInfo } from '@podman-desktop/api';
 import type { KubeContext } from '@podman-desktop/api/kubernetes-context';
 import type { PodInfo } from '@podman-desktop/api/pod-info';
 import { get } from 'svelte/store';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { gatherAgentContext } from './agent-context';
+import { buildContextArgs, gatherAgentContext } from './agent-context';
 
 vi.mock(import('svelte/store'), async importOriginal => {
   const actual = await importOriginal();
@@ -43,6 +43,7 @@ beforeEach(() => {
   vi.mocked(window.listImages).mockResolvedValue([]);
   vi.mocked(window.listVolumes).mockResolvedValue([]);
   vi.mocked(window.kubernetesGetDetailedContexts).mockResolvedValue([]);
+  vi.mocked(window.listExtensions).mockResolvedValue([]);
 });
 
 describe('gatherAgentContext', () => {
@@ -52,7 +53,11 @@ describe('gatherAgentContext', () => {
     expect(result).toContain('Podman Desktop');
     expect(result).toContain('podman');
     expect(result).toContain('MCP');
-    expect(result).toContain('port 6110');
+    expect(result).toContain('localhost:6110/mcp');
+    expect(result).toContain('podman compose');
+    expect(result).toContain('docker-compose');
+    expect(result).toContain('Docker-compatible socket');
+    expect(result).not.toContain('Lima');
   });
 
   test('includes current page name', async () => {
@@ -172,6 +177,28 @@ describe('gatherAgentContext', () => {
     expect(result).toContain('... and 3 more');
   });
 
+  test('shows active extensions', async () => {
+    vi.mocked(window.listExtensions).mockResolvedValue([
+      { name: 'podman', displayName: 'Podman', state: 'started' } as unknown as ExtensionInfo,
+      { name: 'compose', displayName: 'Compose', state: 'started' } as unknown as ExtensionInfo,
+      { name: 'disabled-ext', displayName: 'Disabled', state: 'stopped' } as unknown as ExtensionInfo,
+    ]);
+
+    const result = await gatherAgentContext();
+    expect(result).toContain('Extensions (2 active): Podman, Compose');
+    expect(result).not.toContain('Disabled');
+  });
+
+  test('includes working directory when cwd provided', async () => {
+    const result = await gatherAgentContext('/home/user/project');
+    expect(result).toContain('Working directory: /home/user/project');
+  });
+
+  test('omits working directory when cwd not provided', async () => {
+    const result = await gatherAgentContext();
+    expect(result).not.toContain('Working directory');
+  });
+
   test('fetches all data via IPC in parallel', async () => {
     await gatherAgentContext();
 
@@ -181,5 +208,24 @@ describe('gatherAgentContext', () => {
     expect(window.listImages).toHaveBeenCalledOnce();
     expect(window.listVolumes).toHaveBeenCalledOnce();
     expect(window.kubernetesGetDetailedContexts).toHaveBeenCalledOnce();
+    expect(window.listExtensions).toHaveBeenCalledOnce();
+  });
+});
+
+describe('buildContextArgs', () => {
+  test('returns --append-system-prompt for claude', () => {
+    expect(buildContextArgs('claude', 'ctx')).toEqual(['--append-system-prompt', 'ctx']);
+  });
+
+  test('returns --append-system-prompt for pi', () => {
+    expect(buildContextArgs('pi', 'ctx')).toEqual(['--append-system-prompt', 'ctx']);
+  });
+
+  test('returns -c developer_instructions for codex', () => {
+    expect(buildContextArgs('codex', 'ctx')).toEqual(['-c', 'developer_instructions=ctx']);
+  });
+
+  test('returns empty array for unknown agent', () => {
+    expect(buildContextArgs('unknown', 'ctx')).toEqual([]);
   });
 });
