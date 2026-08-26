@@ -27,16 +27,16 @@ let {
 
 let logsXtermDiv: HTMLDivElement | undefined;
 let resizeHandler: () => void;
+let resizeObserver: ResizeObserver | undefined;
 
 const dispatch = createEventDispatcher();
 
 async function refreshTerminal(): Promise<void> {
-  // missing element, return
   if (!logsXtermDiv) {
     return;
   }
   await ensureGhosttyInit();
-  // grab font size
+
   const fontSize = await window.getConfigurationValue<number>(
     TerminalSettings.SectionName + '.' + TerminalSettings.FontSize,
   );
@@ -57,17 +57,25 @@ async function refreshTerminal(): Promise<void> {
   terminal.open(logsXtermDiv);
   terminal.loadAddon(fitAddon);
   if (!showCursor) {
-    // disable cursor
     terminal.write('\x1b[?25l');
   }
 
-  // call fit addon each time we resize the window
-  resizeHandler = (): void => {
+  const doFit = (): void => {
+    if (!logsXtermDiv || logsXtermDiv.offsetHeight === 0) {
+      return;
+    }
     fitAddon.fit();
   };
+
+  resizeHandler = doFit;
   window.addEventListener('resize', resizeHandler);
 
-  fitAddon.fit();
+  resizeObserver = new ResizeObserver(() => {
+    requestAnimationFrame(doFit);
+  });
+  resizeObserver.observe(logsXtermDiv);
+
+  doFit();
 }
 
 onMount(async () => {
@@ -77,6 +85,7 @@ onMount(async () => {
 
 onDestroy(() => {
   window.removeEventListener('resize', resizeHandler);
+  resizeObserver?.disconnect();
   terminal?.dispose();
 });
 </script>

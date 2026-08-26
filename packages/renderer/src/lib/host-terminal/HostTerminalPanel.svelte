@@ -6,6 +6,8 @@ import Fa from 'svelte-fa';
 import {
   activeHostTerminalTabId,
   addTerminalTab,
+  agentFollowUI,
+  agentIncludeContext,
   agentWorkingDirectory,
   getNextTabId,
   hostTerminalPanelHeight,
@@ -25,7 +27,9 @@ interface DetectedAgent {
 
 const MIN_HEIGHT = 120;
 const CONTEXT_TOOLTIP =
-  'Injects Podman Desktop state into the agent system prompt: running containers, pods, images, volumes, Kubernetes context, active extensions, and current page.';
+  'Injects Podman Desktop state into the agent system prompt: running containers, pods, images, volumes, active extensions, and current page.';
+const FOLLOW_UI_TOOLTIP =
+  'Podman Desktop auto-navigates to follow agent actions. Agents are instructed to prefer the MCP server over CLI when available.';
 
 let panelHeight = $state(300);
 let dragging = $state(false);
@@ -34,12 +38,15 @@ let startHeight = 0;
 
 let detectedAgents = $state<DetectedAgent[]>([]);
 let includeContext = $state(false);
+let followUI = $state(false);
 let showMenu = $state(false);
 let menuRef = $state<HTMLDivElement>();
 let selectedDir = $state<string | undefined>(undefined);
 
 hostTerminalPanelHeight.subscribe(h => (panelHeight = h));
 agentWorkingDirectory.subscribe(d => (selectedDir = d));
+agentIncludeContext.subscribe(v => (includeContext = v));
+agentFollowUI.subscribe(v => (followUI = v));
 
 $effect(() => {
   if ($hostTerminalPanelVisible && $hostTerminalTabs.length === 0) {
@@ -52,7 +59,7 @@ async function createTerminal(agent?: DetectedAgent): Promise<void> {
   if (agent) {
     let args: string[] | undefined;
     if (includeContext) {
-      const context = await gatherAgentContext(selectedDir);
+      const context = await gatherAgentContext(selectedDir, followUI);
       args = buildContextArgs(agent.binary, context);
     }
     addTerminalTab(tabId, {
@@ -92,6 +99,10 @@ async function browseDirectory(): Promise<void> {
 function clearDirectory(): void {
   selectedDir = undefined;
   agentWorkingDirectory.set(undefined);
+}
+
+function syncFollowUIConfig(enabled: boolean): void {
+  window.updateConfigurationValue('mcp.server.followUI', enabled).catch(console.warn);
 }
 
 function displayPath(fullPath: string): string {
@@ -186,15 +197,13 @@ function onMouseUp(): void {
       </div>
       <div class="ml-auto flex items-center">
         {#if selectedDir}
-          <Tooltip tip={selectedDir} bottom>
-            <span
-              class="px-2 text-[10px] text-[var(--pd-global-nav-icon)] opacity-60 truncate max-w-[200px] select-text cursor-default"
-              title={selectedDir}>
-              {displayPath(selectedDir)}
-            </span>
-          </Tooltip>
+          <span
+            class="px-2 text-[10px] text-[var(--pd-global-nav-icon)] opacity-60 truncate max-w-[200px] select-text cursor-default"
+            title={selectedDir}>
+            {displayPath(selectedDir)}
+          </span>
         {/if}
-        <Tooltip tip="New Terminal" bottom>
+        <Tooltip tip="New Terminal" top>
           <button
             class="flex items-center justify-center w-7 h-full text-[var(--pd-global-nav-icon)] hover:bg-[var(--pd-global-nav-bg-hover)]"
             onclick={(): void => { createTerminal().catch(console.error); }}
@@ -203,7 +212,7 @@ function onMouseUp(): void {
           </button>
         </Tooltip>
         <div class="relative" bind:this={menuRef}>
-          <Tooltip tip="Launch AI Agent" bottom>
+          <Tooltip tip="Launch AI Agent" top>
             <button
               class="flex items-center justify-center w-7 h-full text-[var(--pd-global-nav-icon)] hover:bg-[var(--pd-global-nav-bg-hover)]"
               onclick={(): void => { toggleMenu().catch(console.error); }}
@@ -248,9 +257,18 @@ function onMouseUp(): void {
                   {/if}
                 </div>
               </div>
-              <div class="border-t border-[var(--pd-content-card-border)] mt-1 pt-1 px-3 py-1.5">
+              <div class="border-t border-[var(--pd-content-card-border)] mt-1 pt-1 px-3 py-1.5 space-y-1.5">
                 <label class="flex items-center gap-2 text-[var(--pd-content-text)] cursor-pointer whitespace-nowrap">
-                  <input type="checkbox" bind:checked={includeContext} class="w-4 rounded" />
+                  <input type="checkbox" bind:checked={followUI} onchange={(): void => { agentFollowUI.set(followUI); syncFollowUIConfig(followUI); }} class="w-4 rounded" />
+                  Follow UI
+                  <Tooltip tip={FOLLOW_UI_TOOLTIP} bottom>
+                    <span class="ml-auto text-[var(--pd-global-nav-icon)] opacity-60 hover:opacity-100">
+                      <Fa icon={faCircleInfo} size="0.75x" />
+                    </span>
+                  </Tooltip>
+                </label>
+                <label class="flex items-center gap-2 text-[var(--pd-content-text)] cursor-pointer whitespace-nowrap">
+                  <input type="checkbox" bind:checked={includeContext} onchange={(): void => { agentIncludeContext.set(includeContext); }} class="w-4 rounded" />
                   Include context
                   <Tooltip tip={CONTEXT_TOOLTIP} bottom>
                     <span class="ml-auto text-[var(--pd-global-nav-icon)] opacity-60 hover:opacity-100">
