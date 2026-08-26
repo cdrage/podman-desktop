@@ -16,7 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { buildImagesInfo } from '/@/stores/build-images';
+import type { BuildImageInfo } from '/@/stores/build-images';
+import { buildImagesInfo, lastUpdatedTaskId } from '/@/stores/build-images';
 
 export interface BuildImageCallback {
   // callback on stream
@@ -123,3 +124,55 @@ function deleteBuildImageTask(taskId: number): void {
 }
 
 window.events?.receive('build-image-task-delete', deleteBuildImageTask as (...args: unknown[]) => void);
+
+const externalBuildKeys = new Map<number, symbol>();
+
+window.events?.receive(
+  'mcp:build-started',
+  ((payload: { taskId: number; imageName: string; contextDir: string; containerFile?: string }) => {
+    const key = startBuild({
+      onStream: () => {},
+      onError: () => {},
+      onEnd: () => {},
+    });
+    externalBuildKeys.set(payload.taskId, key);
+
+    const info: BuildImageInfo = {
+      taskId: payload.taskId,
+      buildImageKey: key,
+      buildRunning: true,
+      buildFinished: false,
+      containerImageName: payload.imageName,
+      containerFilePath: payload.containerFile ?? '',
+      containerBuildContextDirectory: payload.contextDir,
+      containerBuildPlatform: '',
+      buildArgs: [],
+    };
+
+    buildImagesInfo.update(map => {
+      map.set(payload.taskId, info);
+      return map;
+    });
+    lastUpdatedTaskId.set(payload.taskId);
+  }) as (...args: unknown[]) => void,
+);
+
+window.events?.receive(
+  'mcp:build-output',
+  ((payload: { taskId: number; eventName: 'stream' | 'error' | 'finish'; data: string }) => {
+    const key = externalBuildKeys.get(payload.taskId);
+    if (key) {
+      eventCollect(key, payload.eventName, payload.data);
+      if (payload.eventName === 'finish') {
+        buildImagesInfo.update(map => {
+          const info = map.get(payload.taskId);
+          if (info) {
+            info.buildRunning = false;
+            info.buildFinished = true;
+          }
+          return map;
+        });
+      }
+    }
+  }) as (...args: unknown[]) => void,
+);

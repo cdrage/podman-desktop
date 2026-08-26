@@ -180,6 +180,7 @@ import product from '/@product.json' with { type: 'json' };
 
 // eslint-disable-next-line no-restricted-imports
 import rootPackage from '../../../../package.json' with { type: 'json' };
+import { AgentDetectionService } from './agent-detection-service.js';
 import { AppearanceInit } from './appearance-init.js';
 import { AuthenticationImpl } from './authentication.js';
 import { AutostartEngine } from './autostart-engine.js';
@@ -220,6 +221,7 @@ import { Featured } from './featured/featured.js';
 import { FeedbackHandler } from './feedback-handler.js';
 import { FilesystemMonitoring } from './filesystem-monitoring.js';
 import { HelpMenu } from './help-menu/help-menu.js';
+import { HostTerminalService } from './host-terminal-service.js';
 import { IconRegistry } from './icon-registry.js';
 import { ImageCheckerImpl } from './image-checker.js';
 import { ImageFilesRegistry } from './image-files-registry.js';
@@ -247,8 +249,6 @@ import { StatusBarRegistry } from './statusbar/statusbar-registry.js';
 import { NotificationRegistry } from './tasks/notification-registry.js';
 import { ProgressImpl } from './tasks/progress-impl.js';
 import { EventType, Telemetry } from './telemetry/telemetry.js';
-import { AgentDetectionService } from './agent-detection-service.js';
-import { HostTerminalService } from './host-terminal-service.js';
 import { TerminalInit } from './terminal-init.js';
 import { TrayIconColor } from './tray-icon-color.js';
 import { TrayMenuRegistry } from './tray-menu-registry.js';
@@ -1706,6 +1706,68 @@ export class PluginSystem {
             task.error = `Something went wrong while trying to build image: ${String(err)}`;
             throw err;
           });
+      },
+    );
+
+    commandRegistry.registerCommand(
+      '_internal.buildImageForViewer',
+      async (options: {
+        contextDir: string;
+        containerFile?: string;
+        tag: string;
+        platform?: string;
+        noCache?: boolean;
+        buildArgs?: { [key: string]: string };
+        target?: string;
+      }) => {
+        const taskId = Date.now();
+
+        const task = taskManager.createTask({
+          title: `Building image ${options.tag || ''}`.trim(),
+          action: {
+            name: 'Go to task >',
+            execute: () => {
+              navigationManager.navigateToImageBuild(taskId).catch((err: unknown) => {
+                console.error(`Error navigating to image build: ${String(err)}`);
+              });
+            },
+          },
+        });
+
+        apiSender.send('mcp:build-started', {
+          taskId,
+          imageName: options.tag,
+          contextDir: options.contextDir,
+          containerFile: options.containerFile,
+        });
+
+        const logs: string[] = [];
+
+        try {
+          await containerProviderRegistry.buildImage(
+            options.contextDir,
+            (eventName: string, data: string) => {
+              apiSender.send('mcp:build-output', { taskId, eventName, data });
+              if (eventName === 'stream') {
+                logs.push(data);
+              }
+            },
+            {
+              containerFile: options.containerFile,
+              tag: options.tag,
+              platform: options.platform,
+              nocache: options.noCache,
+              buildargs: options.buildArgs,
+              target: options.target,
+            },
+          );
+          task.status = 'success';
+        } catch (err: unknown) {
+          task.error = `Build failed: ${String(err)}`;
+          throw err;
+        }
+
+        return { taskId, output: logs.join('') };
       },
     );
 
