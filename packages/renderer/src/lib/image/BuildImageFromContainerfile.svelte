@@ -35,12 +35,7 @@ interface Props {
 
 let { taskId = $bindable() }: Props = $props();
 let buildImageInfo: BuildImageInfo = $state(createDefaultBuildImageInfo());
-let activeTab: 'basic' | 'advanced' = $state('basic');
 let validateRegistries = $state(true);
-let noCache = $state(false);
-let pull = $state(false);
-let squash = $state(false);
-let networkMode = $state('default');
 
 const containerFileDialogOptions: OpenDialogOptions = {
   title: 'Select Containerfile to build',
@@ -139,7 +134,6 @@ async function buildSinglePlatformImage(): Promise<void> {
       throw new Error('There is no container engine available.');
     }
     // Build the singular image
-    const advOpts = { noCache, pull, squash, networkMode: networkMode !== 'default' ? networkMode : undefined };
     await window.buildImage(
       buildImageInfo.containerBuildContextDirectory,
       relativeContainerfilePath,
@@ -153,7 +147,6 @@ async function buildSinglePlatformImage(): Promise<void> {
       buildImageInfo.taskId,
       buildImageInfo.target,
       validateRegistries,
-      advOpts,
     );
   } catch (error) {
     eventCollect(buildImageInfo.buildImageKey, 'error', String(error));
@@ -205,7 +198,6 @@ async function buildMultiplePlatformImagesAndCreateManifest(): Promise<void> {
       // Build the image for the current platform
       // NOTE: We purposely pass in '' as the container name so that the built image is
       // <none> in the image list similar to the Podman CLI.
-      const multiAdvOpts = { noCache, pull, squash, networkMode: networkMode !== 'default' ? networkMode : undefined };
       const buildOutput: BuildOutput = (await window.buildImage(
         buildImageInfo.containerBuildContextDirectory,
         relativeContainerfilePath,
@@ -219,7 +211,6 @@ async function buildMultiplePlatformImagesAndCreateManifest(): Promise<void> {
         buildImageInfo.taskId,
         buildImageInfo.target,
         validateRegistries,
-        multiAdvOpts,
       )) as BuildOutput;
 
       // Extract and store the build ID as this is required for creating the manifest, only if it is available.
@@ -363,131 +354,92 @@ let hasInvalidFields = $derived(
     <i class="fas fa-cube fa-2x" aria-hidden="true"></i>
   {/snippet}
   {#snippet content()}
-    <div class="space-y-2">
+    <div class="space-y-6">
       <div hidden={buildImageInfo.buildRunning}>
-        <div class="flex flex-row px-2 border-b border-[var(--pd-content-divider)]">
-          <!-- svelte-ignore a11y_click_events_have_key_events -->
-          <!-- svelte-ignore a11y_no_static_element_interactions -->
-          <div
-            class="pb-1 border-b-[3px] whitespace-nowrap hover:cursor-pointer"
-            class:border-[var(--pd-tab-highlight)]={activeTab === 'basic'}
-            class:border-transparent={activeTab !== 'basic'}
-            class:hover:border-[var(--pd-tab-hover)]={activeTab !== 'basic'}
-            onclick={(): void => { activeTab = 'basic'; }}>
-            <span
-              class="px-4 py-2 text-[var(--pd-tab-text)]"
-              class:text-[var(--pd-tab-text-highlight)]={activeTab === 'basic'}
-              aria-label="Basic tab">Basic</span>
-          </div>
-          <!-- svelte-ignore a11y_click_events_have_key_events -->
-          <!-- svelte-ignore a11y_no_static_element_interactions -->
-          <div
-            class="pb-1 border-b-[3px] whitespace-nowrap hover:cursor-pointer"
-            class:border-[var(--pd-tab-highlight)]={activeTab === 'advanced'}
-            class:border-transparent={activeTab !== 'advanced'}
-            class:hover:border-[var(--pd-tab-hover)]={activeTab !== 'advanced'}
-            onclick={(): void => { activeTab = 'advanced'; }}>
-            <span
-              class="px-4 py-2 text-[var(--pd-tab-text)]"
-              class:text-[var(--pd-tab-text-highlight)]={activeTab === 'advanced'}
-              aria-label="Advanced tab">Advanced</span>
-          </div>
-        </div>
+        <label for="containerFilePath" class="block mb-2 font-semibold text-[var(--pd-content-card-header-text)]"
+          >Containerfile path</label>
+        <FileInput
+          name="containerFilePath"
+          id="containerFilePath"
+          bind:value={buildImageInfo.containerFilePath}
+          placeholder="Containerfile to build"
+          options={containerFileDialogOptions}
+          class="w-full" />
       </div>
-      <div class="pt-4">
-        <div class="pr-4" hidden={buildImageInfo.buildRunning || activeTab !== 'basic'}>
-          <label for="containerFilePath" class="block mb-2 text-sm font-medium text-[var(--pd-content-card-header-text)]"
-            >Containerfile path</label>
-          <FileInput
-            name="containerFilePath"
-            id="containerFilePath"
-            bind:value={buildImageInfo.containerFilePath}
-            placeholder="Containerfile to build"
-            options={containerFileDialogOptions}
-            class="w-full" />
 
-          <label
-            for="containerBuildContextDirectory"
-            class="pt-4 block mb-2 text-sm font-medium text-[var(--pd-content-card-header-text)]">Build context directory</label>
-          <FileInput
-            name="containerBuildContextDirectory"
-            id="containerBuildContextDirectory"
-            bind:value={buildImageInfo.containerBuildContextDirectory}
-            placeholder="Directory to build in"
-            options={contextDialogOptions}
-            class="w-full" />
+      <div hidden={buildImageInfo.buildRunning}>
+        <label
+          for="containerBuildContextDirectory"
+          class="block mb-2 font-semibold text-[var(--pd-content-card-header-text)]">Build context directory</label>
+        <FileInput
+          name="containerBuildContextDirectory"
+          id="containerBuildContextDirectory"
+          bind:value={buildImageInfo.containerBuildContextDirectory}
+          placeholder="Directory to build in"
+          options={contextDialogOptions}
+          class="w-full" />
+      </div>
 
-          <label for="containerImageName" class="pt-4 block mb-2 text-sm font-medium text-[var(--pd-content-card-header-text)]"
-            >Image name</label>
-          <Input
-            bind:value={buildImageInfo.containerImageName}
-            name="containerImageName"
-            id="containerImageName"
-            placeholder="Image name (e.g. quay.io/namespace/my-custom-image)"
-            error={errorContainerImageName}
-            class="w-full" />
+      <div hidden={buildImageInfo.buildRunning}>
+        <label for="containerImageName" class="block mb-2 font-semibold text-[var(--pd-content-card-header-text)]"
+          >Image name</label>
+        <Input
+          bind:value={buildImageInfo.containerImageName}
+          name="containerImageName"
+          id="containerImageName"
+          placeholder="Image name (e.g. quay.io/namespace/my-custom-image)"
+          error={errorContainerImageName}
+          class="w-full" />
+      </div>
 
-          {#if providerConnections.length > 1}
-            <label for="providerChoice" class="pt-4 block mb-2 text-sm font-medium text-[var(--pd-content-card-header-text)]"
-              >Container engine</label>
-            <ContainerConnectionDropdown
-              id="providerChoice"
-              name="providerChoice"
-              bind:value={buildImageInfo.selectedProvider}
-              connections={providerConnections} />
-          {/if}
-
-          <label for="containerBuildPlatform" class="pt-4 block mb-2 text-sm font-medium text-[var(--pd-content-card-header-text)]"
-            >Platform</label>
-          {#if platforms.length > 1}
-            <p class="text-[var(--pd-content-text)] mb-2">Multiple platforms selected, a manifest will be created</p>
-          {/if}
-          <BuildImageFromContainerfileCards bind:platforms={buildImageInfo.containerBuildPlatform} />
-        </div>
-
-        <div class="pr-4" hidden={buildImageInfo.buildRunning || activeTab !== 'advanced'}>
-          {#if buildImageInfo.containerFilePath}
+      {#if buildImageInfo.containerFilePath}
+        <div hidden={buildImageInfo.buildRunning}>
             <BuildTargetDropdown bind:target={buildImageInfo.target} containerFilePath={buildImageInfo.containerFilePath} />
-          {/if}
-
-          <label for="inputKey" class="pt-4 block mb-2 text-sm font-medium text-[var(--pd-content-card-header-text)]"
-            >Build arguments</label>
-          {#each buildImageInfo.buildArgs as buildArg, index (index)}
-            <div class="flex flex-row items-center space-x-2 mb-2">
-              <Input bind:value={buildArg.key} name="inputKey" placeholder="Key" class="grow" required />
-              <Input bind:value={buildArg.value} placeholder="Value" class="grow" required />
-              <Button
-                on:click={(): void => deleteBuildArg(index)}
-                icon={faMinusCircle}
-                disabled={buildImageInfo.buildArgs.length === 1 && buildArg.key === '' && buildArg.value === ''}
-                aria-label="Delete build argument" />
-              <Button on:click={addBuildArg} icon={faPlusCircle} title="Add build argument" aria-label="Add build argument" />
-            </div>
-          {/each}
-
-          <label for="buildOptions" class="pt-4 block mb-2 text-sm font-medium text-[var(--pd-content-card-header-text)]"
-            >Build options</label>
-          <div class="flex flex-col text-[var(--pd-content-card-text)] text-sm ml-2 space-y-2">
-            <Checkbox bind:checked={noCache} title="no cache">Do not use cache when building</Checkbox>
-            <Checkbox bind:checked={pull} title="always pull">Always pull base images</Checkbox>
-            <Checkbox bind:checked={squash} title="squash layers">Squash resulting layers into a single layer</Checkbox>
-          </div>
-
-          <label for="networkMode" class="pt-4 block mb-2 text-sm font-medium text-[var(--pd-content-card-header-text)]"
-            >Network mode</label>
-          <select
-            id="networkMode"
-            bind:value={networkMode}
-            class="w-48 px-2 py-1 text-sm rounded bg-[var(--pd-input-field-bg)] text-[var(--pd-input-field-focused-text)] border border-[var(--pd-input-field-stroke)]">
-            <option value="default">Default</option>
-            <option value="host">Host</option>
-            <option value="none">None</option>
-          </select>
-
-          <label for="registryValidation" class="pt-4 block mb-2 text-sm font-medium text-[var(--pd-content-card-header-text)]"
-            >Registry validation</label>
-          <Checkbox bind:checked={validateRegistries} title='validate registries'>Validate registries before building</Checkbox>
         </div>
+      {/if}
+
+      {#if providerConnections.length > 1}
+        <div hidden={buildImageInfo.buildRunning}>
+          <label for="providerChoice" class="block mb-2 font-semibold text-[var(--pd-content-card-header-text)]"
+            >Container engine</label>
+          <ContainerConnectionDropdown
+            id="providerChoice"
+            name="providerChoice"
+            bind:value={buildImageInfo.selectedProvider}
+            connections={providerConnections} />
+        </div>
+      {/if}
+
+      <div hidden={buildImageInfo.buildRunning}>
+        <label for="inputKey" class="block mb-2 font-semibold text-[var(--pd-content-card-header-text)]"
+          >Build arguments</label>
+        {#each buildImageInfo.buildArgs as buildArg, index (index)}
+          <div class="flex flex-row items-center space-x-2 mb-2">
+            <Input bind:value={buildArg.key} name="inputKey" placeholder="Key" class="grow" required />
+            <Input bind:value={buildArg.value} placeholder="Value" class="grow" required />
+            <Button
+              on:click={(): void => deleteBuildArg(index)}
+              icon={faMinusCircle}
+              disabled={buildImageInfo.buildArgs.length === 1 && buildArg.key === '' && buildArg.value === ''}
+              aria-label="Delete build argument" />
+            <Button on:click={addBuildArg} icon={faPlusCircle} title="Add build argument" aria-label="Add build argument" />
+          </div>
+        {/each}
+      </div>
+
+      <div hidden={buildImageInfo.buildRunning}>
+        <label for="containerBuildPlatform" class="block mb-2 font-semibold text-[var(--pd-content-card-header-text)]"
+          >Platform</label>
+        {#if platforms.length > 1}
+          <p class="text-[var(--pd-content-text)] mb-2">Multiple platforms selected, a manifest will be created</p>
+        {/if}
+        <BuildImageFromContainerfileCards bind:platforms={buildImageInfo.containerBuildPlatform} />
+      </div>
+
+      <div hidden={buildImageInfo.buildRunning}>
+        <label for="registryValidation" class="block mb-2 font-semibold text-[var(--pd-content-card-header-text)]"
+          >Registry Validation</label>
+        <Checkbox bind:checked={validateRegistries} title='validate registries'>Validate registries before building</Checkbox>
       </div>
 
       <div class="flex items-center justify-end gap-3">

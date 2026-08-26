@@ -1648,7 +1648,6 @@ export class PluginSystem {
         taskId?: number,
         target?: string,
         validateRegistries?: boolean,
-        advancedOptions?: { noCache?: boolean; pull?: boolean; squash?: boolean; networkMode?: string },
       ): Promise<unknown> => {
         const titleArgs = ['Building image'];
         if (imageName) {
@@ -1699,10 +1698,6 @@ export class PluginSystem {
               buildargs,
               target,
               validateRegistries,
-              nocache: advancedOptions?.noCache,
-              pull: advancedOptions?.pull,
-              squash: advancedOptions?.squash,
-              networkmode: advancedOptions?.networkMode,
             },
           )
           .then(result => {

@@ -207,7 +207,6 @@ test('Select multiple platforms and expect pressing Build will do two buildImage
     expect.anything(),
     undefined,
     true,
-    { noCache: false, pull: false, squash: false },
   );
 
   expect(window.buildImage).toHaveBeenCalledWith(
@@ -223,7 +222,6 @@ test('Select multiple platforms and expect pressing Build will do two buildImage
     expect.anything(),
     undefined,
     true,
-    { noCache: false, pull: false, squash: false },
   );
 });
 
@@ -321,7 +319,6 @@ test('Selecting one platform only calls buildImage once with the selected platfo
     expect.anything(),
     undefined,
     true,
-    { noCache: false, pull: false, squash: false },
   );
 });
 
@@ -436,8 +433,6 @@ test('Expect build to include build arguments', async () => {
   const containerImageName = screen.getByRole('textbox', { name: 'Image name' });
   expect(containerImageName).toBeInTheDocument();
   await userEvent.type(containerImageName, 'foobar');
-
-  await userEvent.click(screen.getByLabelText('Advanced tab'));
 
   const addArgButton = screen.getByRole('button', { name: 'Add build argument' });
   expect(addArgButton).toBeInTheDocument();
@@ -642,8 +637,6 @@ describe('Build image that has an intermediate target', () => {
     const imageName = getByRole('textbox', { name: 'Image name' });
     await userEvent.type(imageName, 'foobar');
 
-    await userEvent.click(screen.getByLabelText('Advanced tab'));
-
     const targetDropdown = getByRole('button', { name: 'Target' });
     await userEvent.click(targetDropdown);
 
@@ -667,7 +660,6 @@ describe('Build image that has an intermediate target', () => {
       expect.anything(),
       expected,
       true,
-      { noCache: false, pull: false, squash: false },
     );
   });
 });
@@ -676,8 +668,6 @@ test('Expect to have a checkbox on by default to validate registries before buil
   setup();
   render(BuildImageFromContainerfile, {});
 
-  await userEvent.click(screen.getByLabelText('Advanced tab'));
-
   const validateRegistriesCheckbox = screen.getByRole('checkbox', { name: 'validate registries' });
 
   expect(validateRegistriesCheckbox).toBeChecked();
@@ -685,8 +675,6 @@ test('Expect to have a checkbox on by default to validate registries before buil
   await userEvent.click(validateRegistriesCheckbox);
 
   expect(validateRegistriesCheckbox).not.toBeChecked();
-
-  await userEvent.click(screen.getByLabelText('Basic tab'));
 
   vi.mocked(window.pathRelative).mockResolvedValue('containerfile');
   const containerFilePath = screen.getByRole('textbox', { name: 'Containerfile path' });
@@ -712,6 +700,5 @@ test('Expect to have a checkbox on by default to validate registries before buil
     expect.anything(),
     undefined,
     false,
-    { noCache: false, pull: false, squash: false },
   );
 });
