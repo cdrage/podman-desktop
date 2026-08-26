@@ -24,7 +24,8 @@ interface DetectedAgent {
 }
 
 const MIN_HEIGHT = 120;
-const CONTEXT_TOOLTIP = 'Injects Podman Desktop state into the agent system prompt: running containers, pods, images, volumes, Kubernetes context, active extensions, and current page.';
+const CONTEXT_TOOLTIP =
+  'Injects Podman Desktop state into the agent system prompt: running containers, pods, images, volumes, Kubernetes context, active extensions, and current page.';
 
 let panelHeight = $state(300);
 let dragging = $state(false);
@@ -183,16 +184,16 @@ function onMouseUp(): void {
           </div>
         {/each}
       </div>
-      {#if selectedDir}
-        <Tooltip tip={selectedDir} bottom>
-          <span
-            class="px-2 text-[10px] text-[var(--pd-global-nav-icon)] opacity-60 truncate max-w-[200px] select-text cursor-default"
-            title={selectedDir}>
-            {displayPath(selectedDir)}
-          </span>
-        </Tooltip>
-      {/if}
       <div class="ml-auto flex items-center">
+        {#if selectedDir}
+          <Tooltip tip={selectedDir} bottom>
+            <span
+              class="px-2 text-[10px] text-[var(--pd-global-nav-icon)] opacity-60 truncate max-w-[200px] select-text cursor-default"
+              title={selectedDir}>
+              {displayPath(selectedDir)}
+            </span>
+          </Tooltip>
+        {/if}
         <Tooltip tip="New Terminal" bottom>
           <button
             class="flex items-center justify-center w-7 h-full text-[var(--pd-global-nav-icon)] hover:bg-[var(--pd-global-nav-bg-hover)]"
