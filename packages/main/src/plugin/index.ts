@@ -1572,7 +1572,11 @@ export class PluginSystem {
 
     this.ipcHandle(
       'host-terminal:create',
-      async (_listener, callbackId: number, options?: { command?: string; args?: string[]; cwd?: string }): Promise<number> => {
+      async (
+        _listener,
+        callbackId: number,
+        options?: { command?: string; args?: string[]; cwd?: string },
+      ): Promise<number> => {
         return hostTerminalService.create(this.getWebContentsSender(), callbackId, options);
       },
     );
@@ -1592,8 +1596,6 @@ export class PluginSystem {
     this.ipcHandle('host-terminal:detectAgents', async () => {
       return agentDetectionService.detectAgents();
     });
-
-
 
     const containerProviderRegistryAttachContainerSendCallback = new Map<number, (param: string) => void>();
     this.ipcHandle(
@@ -1646,6 +1648,7 @@ export class PluginSystem {
         taskId?: number,
         target?: string,
         validateRegistries?: boolean,
+        advancedOptions?: { noCache?: boolean; pull?: boolean; squash?: boolean; networkMode?: string },
       ): Promise<unknown> => {
         const titleArgs = ['Building image'];
         if (imageName) {
@@ -1696,6 +1699,10 @@ export class PluginSystem {
               buildargs,
               target,
               validateRegistries,
+              nocache: advancedOptions?.noCache,
+              pull: advancedOptions?.pull,
+              squash: advancedOptions?.squash,
+              networkmode: advancedOptions?.networkMode,
             },
           )
           .then(result => {
