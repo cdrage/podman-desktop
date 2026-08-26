@@ -30,8 +30,7 @@ export interface DetectedAgent {
 const KNOWN_AGENTS = [
   { binary: 'claude', label: 'Claude' },
   { binary: 'codex', label: 'Codex' },
-  { binary: 'aider', label: 'Aider' },
-  { binary: 'goose', label: 'Goose' },
+  { binary: 'pi', label: 'Pi' },
 ];
 
 const CACHE_TTL_MS = 30_000;

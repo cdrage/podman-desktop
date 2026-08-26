@@ -65,7 +65,7 @@ describe('AgentDetectionService', () => {
     service.detectAgents();
     service.detectAgents();
 
-    expect(execSync).toHaveBeenCalledTimes(4);
+    expect(execSync).toHaveBeenCalledTimes(3);
   });
 
   test('re-scans after cache expires', () => {
@@ -77,6 +77,6 @@ describe('AgentDetectionService', () => {
     vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 60_000);
     service.detectAgents();
 
-    expect(execSync).toHaveBeenCalledTimes(8);
+    expect(execSync).toHaveBeenCalledTimes(6);
   });
 });

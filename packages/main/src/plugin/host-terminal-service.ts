@@ -51,15 +51,15 @@ export class HostTerminalService {
     return ['-l'];
   }
 
-  create(webContents: WebContents, callbackId: number, options?: { command?: string }): number {
+  create(webContents: WebContents, callbackId: number, options?: { command?: string; args?: string[]; cwd?: string }): number {
     const shell = options?.command ?? this.getDefaultShell();
-    const args = options?.command ? [] : this.getLoginArgs(shell);
+    const args = options?.command ? (options.args ?? []) : this.getLoginArgs(shell);
 
     const pty = spawn(shell, args, {
       name: 'xterm-256color',
       cols: 80,
       rows: 24,
-      cwd: os.homedir(),
+      cwd: options?.cwd ?? os.homedir(),
       env: process.env as Record<string, string>,
     });
 

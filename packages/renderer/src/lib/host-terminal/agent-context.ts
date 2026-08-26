@@ -21,11 +21,15 @@ import { get } from 'svelte/store';
 
 import { currentPage } from '/@/stores/breadcrumb';
 
-const STATIC_PREAMBLE = `You are being launched from the built-in terminal in Podman Desktop, an open-source desktop application for managing containers, images, pods, volumes, and Kubernetes clusters. It supports multiple container engines including Podman, Docker, Lima, and CRC.
+const STATIC_PREAMBLE = `You are being launched from the built-in terminal in Podman Desktop, an open-source desktop application for managing containers, images, pods, volumes, and Kubernetes clusters.
 
-You have direct access to the host system from this terminal. The \`podman\` CLI is available and fully compatible — you can run any \`podman\` command directly (e.g. \`podman ps\`, \`podman logs\`, \`podman exec\`, \`podman build\`, etc.). Docker CLI commands also work if Docker is configured.
+You have direct access to the host system. The \`podman\` CLI is fully compatible with Docker — you can run any podman command directly (ps, logs, exec, build, run, etc.). Podman also provides a Docker-compatible socket, so \`docker\` CLI commands work as well.
 
-An MCP (Model Context Protocol) server extension may be available on port 6110 for structured programmatic access to Podman Desktop data. If installed and running, you can use it to query containers, images, pods, volumes, and other resources via the MCP protocol.
+\`podman compose\` is available for multi-container applications — it uses the \`docker-compose\` binary underneath, automatically passing the Podman socket. \`docker compose\` also works.
+
+Podman Desktop has a plugin-based extension system. Extensions provide container engines (Podman, Docker, CRC), Kubernetes providers (Kind, Minikube), and additional functionality. Installed extensions are listed below.
+
+An MCP server extension may be available at http://localhost:6110/mcp for structured programmatic access to Podman Desktop resources via the Model Context Protocol.
 
 Below is a snapshot of the current Podman Desktop state:
 `;
@@ -77,7 +81,7 @@ function getPageContext(path: string, containers: ContainerInfo[]): string[] {
   return lines;
 }
 
-export async function gatherAgentContext(): Promise<string> {
+export async function gatherAgentContext(cwd?: string): Promise<string> {
   const lines: string[] = [STATIC_PREAMBLE];
 
   const page = get(currentPage);
@@ -85,13 +89,14 @@ export async function gatherAgentContext(): Promise<string> {
     lines.push(`Current page: ${page.name}`);
   }
 
-  const [providers, containers, pods, images, volumes, k8sContexts] = await Promise.all([
+  const [providers, containers, pods, images, volumes, k8sContexts, extensions] = await Promise.all([
     window.getProviderInfos(),
     window.listContainers(),
     window.listPods(),
     window.listImages(),
     window.listVolumes(),
     window.kubernetesGetDetailedContexts(),
+    window.listExtensions(),
   ]);
 
   for (const provider of providers) {
@@ -156,6 +161,28 @@ export async function gatherAgentContext(): Promise<string> {
     lines.push(`Kubernetes: context "${activeCtx.name}" on cluster "${activeCtx.cluster}"`);
   }
 
+  const activeExtensions = extensions.filter(e => e.state === 'started');
+  if (activeExtensions.length > 0) {
+    const names = activeExtensions.map(e => e.displayName || e.name).join(', ');
+    lines.push(`Extensions (${activeExtensions.length} active): ${names}`);
+  }
+
+  if (cwd) {
+    lines.push(`Working directory: ${cwd}`);
+  }
+
   lines.push('');
   return lines.join('\n') + '\n';
+}
+
+export function buildContextArgs(binary: string, context: string): string[] {
+  switch (binary) {
+    case 'claude':
+    case 'pi':
+      return ['--append-system-prompt', context];
+    case 'codex':
+      return ['-c', `developer_instructions=${context}`];
+    default:
+      return [];
+  }
 }

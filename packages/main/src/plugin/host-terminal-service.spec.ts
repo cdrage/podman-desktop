@@ -161,6 +161,52 @@ describe('HostTerminalService', () => {
     );
   });
 
+  test('create with command and args passes args to spawn', async () => {
+    const service = new HostTerminalService();
+    service.create(mockWebContents as unknown as WebContents, 1, {
+      command: '/usr/local/bin/claude',
+      args: ['--append-system-prompt', 'test context'],
+    });
+
+    const nodePty = await import('node-pty');
+    expect(nodePty.spawn).toHaveBeenCalledWith(
+      '/usr/local/bin/claude',
+      ['--append-system-prompt', 'test context'],
+      expect.objectContaining({
+        name: 'xterm-256color',
+      }),
+    );
+  });
+
+  test('create with cwd passes cwd to spawn', async () => {
+    const service = new HostTerminalService();
+    service.create(mockWebContents as unknown as WebContents, 1, { cwd: '/home/user/project' });
+
+    const nodePty = await import('node-pty');
+    expect(nodePty.spawn).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(Array),
+      expect.objectContaining({
+        cwd: '/home/user/project',
+      }),
+    );
+  });
+
+  test('create defaults cwd to homedir when omitted', async () => {
+    const service = new HostTerminalService();
+    service.create(mockWebContents as unknown as WebContents, 1);
+
+    const os = await import('node:os');
+    const nodePty = await import('node-pty');
+    expect(nodePty.spawn).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(Array),
+      expect.objectContaining({
+        cwd: os.homedir(),
+      }),
+    );
+  });
+
   test('does not send to destroyed webContents', () => {
     mockWebContents.isDestroyed.mockReturnValue(true);
     const service = new HostTerminalService();

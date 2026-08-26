@@ -1587,7 +1587,7 @@ export class PluginSystem {
 
     this.ipcHandle(
       'host-terminal:create',
-      async (_listener, callbackId: number, options?: { command?: string }): Promise<number> => {
+      async (_listener, callbackId: number, options?: { command?: string; args?: string[]; cwd?: string }): Promise<number> => {
         return hostTerminalService.create(this.getWebContentsSender(), callbackId, options);
       },
     );
@@ -1607,6 +1607,8 @@ export class PluginSystem {
     this.ipcHandle('host-terminal:detectAgents', async () => {
       return agentDetectionService.detectAgents();
     });
+
+
 
     const containerProviderRegistryAttachContainerSendCallback = new Map<number, (param: string) => void>();
     this.ipcHandle(

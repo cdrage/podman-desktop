@@ -12,10 +12,11 @@ interface Props {
   active: boolean;
   onExit?: (tabId: number) => void;
   agentCommand?: string;
-  initialContext?: string;
+  agentArgs?: string[];
+  cwd?: string;
 }
 
-let { tabId, active, onExit, agentCommand, initialContext }: Props = $props();
+let { tabId, active, onExit, agentCommand, agentArgs, cwd }: Props = $props();
 let terminalDiv: HTMLDivElement;
 let terminal: Terminal | undefined;
 let fitAddon: FitAddon | undefined;
@@ -86,7 +87,7 @@ onMount(async () => {
     (_exitCode: number) => {
       onExit?.(tabId);
     },
-    agentCommand ? { command: agentCommand } : undefined,
+    agentCommand ? { command: agentCommand, args: agentArgs, cwd } : cwd ? { cwd } : undefined,
   );
 
   terminal.onData(data => {
@@ -103,14 +104,6 @@ onMount(async () => {
 
   if (callbackId && terminal) {
     await window.hostTerminalResize(callbackId, terminal.cols, terminal.rows);
-  }
-
-  if (callbackId && initialContext) {
-    setTimeout(() => {
-      if (callbackId) {
-        window.hostTerminalWrite(callbackId, initialContext).catch(console.error);
-      }
-    }, 500);
   }
 
   if (active) {

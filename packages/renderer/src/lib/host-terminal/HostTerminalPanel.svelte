@@ -1,11 +1,12 @@
 <script lang="ts">
-import { faChevronDown, faPlus, faRobot, faTerminal, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { faCircleInfo, faFolderOpen, faPlus, faRobot, faTerminal, faXmark } from '@fortawesome/free-solid-svg-icons';
 import { Tooltip } from '@podman-desktop/ui-svelte';
 import Fa from 'svelte-fa';
 
 import {
   activeHostTerminalTabId,
   addTerminalTab,
+  agentWorkingDirectory,
   getNextTabId,
   hostTerminalPanelHeight,
   hostTerminalPanelVisible,
@@ -13,7 +14,7 @@ import {
   removeTerminalTab,
 } from '/@/stores/host-terminal-store';
 
-import { gatherAgentContext } from './agent-context';
+import { buildContextArgs, gatherAgentContext } from './agent-context';
 import HostTerminalInstance from './HostTerminalInstance.svelte';
 
 interface DetectedAgent {
@@ -23,17 +24,21 @@ interface DetectedAgent {
 }
 
 const MIN_HEIGHT = 120;
+const CONTEXT_TOOLTIP = 'Injects Podman Desktop state into the agent system prompt: running containers, pods, images, volumes, Kubernetes context, active extensions, and current page.';
+
 let panelHeight = $state(300);
 let dragging = $state(false);
 let startY = 0;
 let startHeight = 0;
 
-let showAgentMenu = $state(false);
 let detectedAgents = $state<DetectedAgent[]>([]);
 let includeContext = $state(false);
-let menuButton: HTMLButtonElement;
+let showMenu = $state(false);
+let menuRef = $state<HTMLDivElement>();
+let selectedDir = $state<string | undefined>(undefined);
 
 hostTerminalPanelHeight.subscribe(h => (panelHeight = h));
+agentWorkingDirectory.subscribe(d => (selectedDir = d));
 
 $effect(() => {
   if ($hostTerminalPanelVisible && $hostTerminalTabs.length === 0) {
@@ -44,34 +49,65 @@ $effect(() => {
 async function createTerminal(agent?: DetectedAgent): Promise<void> {
   const tabId = getNextTabId();
   if (agent) {
-    const context = includeContext ? await gatherAgentContext() : undefined;
+    let args: string[] | undefined;
+    if (includeContext) {
+      const context = await gatherAgentContext(selectedDir);
+      args = buildContextArgs(agent.binary, context);
+    }
     addTerminalTab(tabId, {
       name: agent.label,
       agentCommand: agent.path,
-      initialContext: context,
+      agentArgs: args,
+      cwd: selectedDir,
     });
   } else {
-    addTerminalTab(tabId);
+    addTerminalTab(tabId, selectedDir ? { cwd: selectedDir } : undefined);
   }
-  showAgentMenu = false;
+  showMenu = false;
 }
 
-async function toggleAgentMenu(): Promise<void> {
-  if (showAgentMenu) {
-    showAgentMenu = false;
-    return;
+async function toggleMenu(): Promise<void> {
+  if (!showMenu) {
+    try {
+      detectedAgents = await window.hostTerminalDetectAgents();
+    } catch {
+      detectedAgents = [];
+    }
   }
-  try {
-    detectedAgents = await window.hostTerminalDetectAgents();
-  } catch {
-    detectedAgents = [];
+  showMenu = !showMenu;
+}
+
+async function browseDirectory(): Promise<void> {
+  const result = await window.openDialog({
+    title: 'Select working directory',
+    selectors: ['openDirectory'],
+  });
+  if (result?.[0]) {
+    selectedDir = result[0];
+    agentWorkingDirectory.set(result[0]);
   }
-  showAgentMenu = true;
+}
+
+function clearDirectory(): void {
+  selectedDir = undefined;
+  agentWorkingDirectory.set(undefined);
+}
+
+function displayPath(fullPath: string): string {
+  if (fullPath.length <= 30) return fullPath;
+  const parts = fullPath.split(/[/\\]/);
+  return '.../' + (parts.pop() ?? fullPath);
 }
 
 function handleWindowClick(e: MouseEvent): void {
-  if (showAgentMenu && menuButton && !menuButton.contains(e.target as Node)) {
-    showAgentMenu = false;
+  if (showMenu && menuRef && !menuRef.contains(e.target as Node)) {
+    showMenu = false;
+  }
+}
+
+function handleKeydown(e: KeyboardEvent): void {
+  if (e.key === 'Escape' && showMenu) {
+    showMenu = false;
   }
 }
 
@@ -108,7 +144,7 @@ function onMouseUp(): void {
 }
 </script>
 
-<svelte:window onmousemove={onMouseMove} onmouseup={onMouseUp} onclick={handleWindowClick} />
+<svelte:window onmousemove={onMouseMove} onmouseup={onMouseUp} onclick={handleWindowClick} onkeydown={handleKeydown} />
 
   <div
     class="relative flex flex-col shrink-0 border-y border-[var(--pd-global-nav-bg-border)]"
@@ -147,6 +183,15 @@ function onMouseUp(): void {
           </div>
         {/each}
       </div>
+      {#if selectedDir}
+        <Tooltip tip={selectedDir} bottom>
+          <span
+            class="px-2 text-[10px] text-[var(--pd-global-nav-icon)] opacity-60 truncate max-w-[200px] select-text cursor-default"
+            title={selectedDir}>
+            {displayPath(selectedDir)}
+          </span>
+        </Tooltip>
+      {/if}
       <div class="ml-auto flex items-center">
         <Tooltip tip="New Terminal" bottom>
           <button
@@ -156,41 +201,62 @@ function onMouseUp(): void {
             <Fa icon={faPlus} size="0.8x" />
           </button>
         </Tooltip>
-        <div class="relative">
-          <button
-            bind:this={menuButton}
-            class="flex items-center justify-center w-5 h-full text-[var(--pd-global-nav-icon)] hover:bg-[var(--pd-global-nav-bg-hover)]"
-            onclick={toggleAgentMenu}
-            aria-label="Terminal options">
-            <Fa icon={faChevronDown} size="0.6x" />
-          </button>
-          {#if showAgentMenu}
-            <div class="absolute bottom-full right-0 mb-1 w-52 rounded-md shadow-lg bg-[var(--pd-dropdown-bg)] ring-1 ring-[var(--pd-dropdown-ring)] z-50 text-xs">
-              <div class="py-1">
+        <div class="relative" bind:this={menuRef}>
+          <Tooltip tip="Launch AI Agent" bottom>
+            <button
+              class="flex items-center justify-center w-7 h-full text-[var(--pd-global-nav-icon)] hover:bg-[var(--pd-global-nav-bg-hover)]"
+              onclick={(): void => { toggleMenu().catch(console.error); }}
+              aria-label="Launch AI Agent">
+              <Fa icon={faRobot} size="0.8x" />
+            </button>
+          </Tooltip>
+          {#if showMenu}
+            <div class="absolute top-full right-1 mt-1 z-50 min-w-[220px] py-1 rounded-md shadow-lg
+              bg-[var(--pd-content-bg)] border border-[var(--pd-content-card-border)] text-xs">
+              {#each detectedAgents as agent (agent.binary)}
                 <button
-                  class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-[var(--pd-content-text)] hover:bg-[var(--pd-global-nav-bg-hover)]"
-                  onclick={(): void => { createTerminal().catch(console.error); }}>
-                  <Fa icon={faTerminal} size="0.8x" />
-                  Shell
+                  class="flex items-center gap-2 w-full px-3 py-1.5 text-left text-[var(--pd-content-text)]
+                    hover:bg-[var(--pd-button-primary-bg)] hover:text-[var(--pd-button-primary-text)] cursor-pointer"
+                  onclick={(): void => { createTerminal(agent).catch(console.error); }}>
+                  <Fa icon={faRobot} size="0.8x" class="w-4 text-center" />
+                  {agent.label}
                 </button>
-                {#if detectedAgents.length > 0}
-                  <div class="border-t border-[var(--pd-global-nav-bg-border)] my-1"></div>
-                  {#each detectedAgents as agent (agent.binary)}
+              {/each}
+              {#if detectedAgents.length === 0}
+                <div class="px-3 py-1.5 text-[var(--pd-content-text)] opacity-50">No agents detected</div>
+              {/if}
+              <div class="border-t border-[var(--pd-content-card-border)] mt-1 pt-1 px-3 py-1.5">
+                <div class="flex items-center gap-2 text-[var(--pd-content-text)]">
+                  <button
+                    class="flex items-center gap-2 flex-1 min-w-0 text-left cursor-pointer
+                      hover:text-[var(--pd-button-primary-bg)] whitespace-nowrap"
+                    onclick={(): void => { browseDirectory().catch(console.error); }}
+                    aria-label="Select working directory">
+                    <Fa icon={faFolderOpen} size="0.8x" class="w-4 text-center shrink-0" />
+                    <span class="truncate" title={selectedDir ?? ''}>
+                      {selectedDir ? displayPath(selectedDir) : 'Working directory...'}
+                    </span>
+                  </button>
+                  {#if selectedDir}
                     <button
-                      class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-[var(--pd-content-text)] hover:bg-[var(--pd-global-nav-bg-hover)]"
-                      onclick={(): void => { createTerminal(agent).catch(console.error); }}>
-                      <Fa icon={faRobot} size="0.8x" />
-                      {agent.label}
+                      class="shrink-0 rounded hover:bg-[var(--pd-global-nav-bg-hover)] p-0.5"
+                      onclick={(e: MouseEvent): void => { e.stopPropagation(); clearDirectory(); }}
+                      aria-label="Clear working directory">
+                      <Fa icon={faXmark} size="0.7x" />
                     </button>
-                  {/each}
-                  <div class="border-t border-[var(--pd-global-nav-bg-border)] my-1"></div>
-                  <label
-                    class="flex items-center gap-2 px-3 py-1.5 text-[var(--pd-content-text)] hover:bg-[var(--pd-global-nav-bg-hover)] cursor-pointer"
-                    onclick={(e: MouseEvent): void => e.stopPropagation()}>
-                    <input type="checkbox" bind:checked={includeContext} class="rounded" />
-                    Include page context
-                  </label>
-                {/if}
+                  {/if}
+                </div>
+              </div>
+              <div class="border-t border-[var(--pd-content-card-border)] mt-1 pt-1 px-3 py-1.5">
+                <label class="flex items-center gap-2 text-[var(--pd-content-text)] cursor-pointer whitespace-nowrap">
+                  <input type="checkbox" bind:checked={includeContext} class="w-4 rounded" />
+                  Include context
+                  <Tooltip tip={CONTEXT_TOOLTIP} bottom>
+                    <span class="ml-auto text-[var(--pd-global-nav-icon)] opacity-60 hover:opacity-100">
+                      <Fa icon={faCircleInfo} size="0.75x" />
+                    </span>
+                  </Tooltip>
+                </label>
               </div>
             </div>
           {/if}
@@ -208,7 +274,8 @@ function onMouseUp(): void {
               active={tab.id === $activeHostTerminalTabId}
               onExit={closeTab}
               agentCommand={tab.agentCommand}
-              initialContext={tab.initialContext} />
+              agentArgs={tab.agentArgs}
+              cwd={tab.cwd} />
           </div>
         {/key}
       {/each}
