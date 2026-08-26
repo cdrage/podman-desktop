@@ -1367,6 +1367,7 @@ export function initExposure(): void {
       taskId?: number,
       target?: string,
       validateRegistries?: boolean,
+      advancedOptions?: { noCache?: boolean; pull?: boolean; squash?: boolean; networkMode?: string },
     ): Promise<unknown> => {
       onDataCallbacksBuildImageId++;
       onDataCallbacksBuildImage.set(onDataCallbacksBuildImageId, eventCollect);
@@ -1384,6 +1385,7 @@ export function initExposure(): void {
         taskId,
         target,
         validateRegistries,
+        advancedOptions,
       );
     },
   );
