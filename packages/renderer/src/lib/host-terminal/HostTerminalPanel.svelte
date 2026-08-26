@@ -16,7 +16,7 @@ import {
   removeTerminalTab,
 } from '/@/stores/host-terminal-store';
 
-import { buildContextArgs, gatherAgentContext } from './agent-context';
+import { buildContextArgs, gatherAgentContext, isMcpServerRunning } from './agent-context';
 import HostTerminalInstance from './HostTerminalInstance.svelte';
 
 interface DetectedAgent {
@@ -39,6 +39,7 @@ let startHeight = 0;
 let detectedAgents = $state<DetectedAgent[]>([]);
 let includeContext = $state(false);
 let followUI = $state(false);
+let mcpAvailable = $state(false);
 let showMenu = $state(false);
 let menuRef = $state<HTMLDivElement>();
 let selectedDir = $state<string | undefined>(undefined);
@@ -76,10 +77,16 @@ async function createTerminal(agent?: DetectedAgent): Promise<void> {
 
 async function toggleMenu(): Promise<void> {
   if (!showMenu) {
-    try {
-      detectedAgents = await window.hostTerminalDetectAgents();
-    } catch {
-      detectedAgents = [];
+    const [agents, mcp] = await Promise.all([
+      window.hostTerminalDetectAgents().catch((): DetectedAgent[] => []),
+      isMcpServerRunning(),
+    ]);
+    detectedAgents = agents;
+    mcpAvailable = mcp;
+
+    if (!mcp && followUI) {
+      followUI = false;
+      agentFollowUI.set(false);
     }
   }
   showMenu = !showMenu;
@@ -258,10 +265,11 @@ function onMouseUp(): void {
                 </div>
               </div>
               <div class="border-t border-[var(--pd-content-card-border)] mt-1 pt-1 px-3 py-1.5 space-y-1.5">
-                <label class="flex items-center gap-2 text-[var(--pd-content-text)] cursor-pointer whitespace-nowrap">
-                  <input type="checkbox" bind:checked={followUI} onchange={(): void => { agentFollowUI.set(followUI); syncFollowUIConfig(followUI); }} class="w-4 rounded" />
+                <label class="flex items-center gap-2 text-[var(--pd-content-text)] whitespace-nowrap
+                  {mcpAvailable ? 'cursor-pointer' : 'opacity-40 cursor-not-allowed'}">
+                  <input type="checkbox" bind:checked={followUI} disabled={!mcpAvailable} onchange={(): void => { agentFollowUI.set(followUI); syncFollowUIConfig(followUI); }} class="w-4 rounded" />
                   Follow UI
-                  <Tooltip tip={FOLLOW_UI_TOOLTIP} bottom>
+                  <Tooltip tip={mcpAvailable ? FOLLOW_UI_TOOLTIP : 'MCP server extension is not running'} bottom>
                     <span class="ml-auto text-[var(--pd-global-nav-icon)] opacity-60 hover:opacity-100">
                       <Fa icon={faCircleInfo} size="0.75x" />
                     </span>

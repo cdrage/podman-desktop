@@ -97,7 +97,7 @@ function getPageContext(path: string, containers: ContainerInfo[]): string[] {
   return lines;
 }
 
-async function isMcpServerRunning(): Promise<boolean> {
+export async function isMcpServerRunning(): Promise<boolean> {
   const providers = await window.getProviderInfos();
   for (const p of providers) {
     if (p.id !== 'mcp') {
