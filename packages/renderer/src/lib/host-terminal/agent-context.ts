@@ -39,11 +39,11 @@ Below is a snapshot of the current Podman Desktop state:
 
 const MCP_PREAMBLE = `You are being launched from the built-in terminal in Podman Desktop. A Podman Desktop MCP server is running at ${MCP_URL}.
 
-PREFERRED: Use the MCP server for container, image, pod, and volume operations. MCP tools return structured data and enable "Follow UI" — Podman Desktop auto-navigates to show results of your actions (for example, container logs after a start, the build page during an image build).
+REQUIRED: Use MCP server tools instead of CLI commands. The MCP server has \`podman\`, \`docker\`, and \`kubectl\` tools that wrap the corresponding CLIs. Use them for all container, image, pod, volume, and Kubernetes operations. Do NOT run these commands through the shell.
 
-FALLBACK: If MCP is unavailable, use the \`podman\` CLI directly. It is fully compatible with Docker. \`podman compose\` and \`docker compose\` also work.
+MCP tools enable "Follow UI" — Podman Desktop auto-navigates to show results of your actions (for example, container logs after a start, the Kubernetes dashboard after a kubectl apply).
 
-For Kubernetes, use \`kubectl\` directly or \`oc\` for OpenShift clusters.
+FALLBACK: Only use CLI through the shell if the MCP tool returns an error indicating the server is unreachable.
 
 Podman Desktop has a plugin-based extension system. Installed extensions are listed below.
 

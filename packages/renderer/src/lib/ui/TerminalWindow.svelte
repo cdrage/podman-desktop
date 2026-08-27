@@ -44,6 +44,8 @@ async function refreshTerminal(): Promise<void> {
     TerminalSettings.SectionName + '.' + TerminalSettings.Scrollback,
   );
 
+  const MIN_USABLE_HEIGHT = 50;
+
   terminal = new Terminal({
     fontSize,
     fontFamily: TERMINAL_FONT_FAMILY,
@@ -54,28 +56,47 @@ async function refreshTerminal(): Promise<void> {
   });
   const fitAddon = new FitAddon();
 
-  terminal.open(logsXtermDiv);
-  terminal.loadAddon(fitAddon);
-  if (!showCursor) {
-    terminal.write('\x1b[?25l');
-  }
+  let opened = false;
+  let pendingWrites: string[] = [];
 
-  const doFit = (): void => {
-    if (!logsXtermDiv || logsXtermDiv.offsetHeight === 0) {
+  // Wrap write so data is buffered until the terminal is opened
+  const origWrite = terminal.write.bind(terminal);
+  terminal.write = (data: string): void => {
+    if (!opened) {
+      pendingWrites.push(data);
       return;
+    }
+    origWrite(data);
+  };
+
+  const openAndFit = (): void => {
+    if (!logsXtermDiv || logsXtermDiv.offsetHeight < MIN_USABLE_HEIGHT) {
+      return;
+    }
+    if (!opened) {
+      opened = true;
+      terminal!.open(logsXtermDiv!);
+      terminal!.loadAddon(fitAddon);
+      if (!showCursor) {
+        origWrite('\x1b[?25l');
+      }
+      for (const data of pendingWrites) {
+        origWrite(data);
+      }
+      pendingWrites = [];
     }
     fitAddon.fit();
   };
 
-  resizeHandler = doFit;
+  resizeHandler = openAndFit;
   window.addEventListener('resize', resizeHandler);
 
   resizeObserver = new ResizeObserver(() => {
-    requestAnimationFrame(doFit);
+    openAndFit();
   });
   resizeObserver.observe(logsXtermDiv);
 
-  doFit();
+  openAndFit();
 }
 
 onMount(async () => {
