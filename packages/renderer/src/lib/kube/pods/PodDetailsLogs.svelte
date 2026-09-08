@@ -92,9 +92,9 @@ async function fetchPodLogs(): Promise<void> {
   }
 }
 
-onMount(async () => {
-  await fetchPodLogs();
-});
+function onTerminalInit(): void {
+  fetchPodLogs().catch((err: unknown) => console.error(`Error fetching logs for pod ${pod.name}`, err));
+}
 </script>
 
 <EmptyScreen icon={NoLogIcon} title="No Log" message="Log output of Pod {pod.name}" hidden={noLogs === false} />
@@ -104,5 +104,5 @@ onMount(async () => {
   class:invisible={noLogs === true}
   class:h-0={noLogs === true}
   class:h-full={noLogs === false}>
-  <TerminalWindow class="h-full" bind:terminal={logsTerminal} convertEol disableStdIn />
+  <TerminalWindow class="h-full" bind:terminal={logsTerminal} on:init={onTerminalInit} convertEol disableStdIn />
 </div>

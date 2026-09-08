@@ -81,11 +81,9 @@ function afterTerminalInit(): void {
       container: container,
     },
   });
-}
 
-onMount(async () => {
-  await fetchContainerLogs();
-});
+  fetchContainerLogs().catch((err: unknown) => console.error(`Error fetching container logs ${container.id}`, err));
+}
 
 onDestroy(() => {
   logsTerminal?.dispose();

@@ -121,10 +121,9 @@ test('addon fit should be loaded on mount', async () => {
 });
 
 test('matchMedia resize listener should trigger fit addon', async () => {
-  // spy the event listener
   vi.spyOn(window, 'addEventListener');
 
-  render(TerminalWindow, {
+  const { container } = render(TerminalWindow, {
     terminal: createTerminalMock(),
   });
 
@@ -137,9 +136,11 @@ test('matchMedia resize listener should trigger fit addon', async () => {
     return call[0][1] as unknown as () => void;
   });
 
-  // reset fit calls count
   vi.mocked(FitAddon.prototype.fit).mockReset();
   expect(FitAddon.prototype.fit).not.toHaveBeenCalled();
+
+  const termDiv = container.querySelector('[role="term"]') as HTMLDivElement;
+  Object.defineProperty(termDiv, 'offsetHeight', { value: 100, configurable: true });
 
   listener();
 
