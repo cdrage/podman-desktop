@@ -26,6 +26,10 @@ vi.mock(import('node:child_process'), () => ({
   execSync: vi.fn(),
 }));
 
+vi.mock(import('node:fs'), () => ({
+  existsSync: vi.fn().mockReturnValue(true),
+}));
+
 vi.mock(import('node-pty'), () => ({
   spawn: vi.fn(),
 }));
@@ -36,6 +40,9 @@ class TestableHostTerminalService extends HostTerminalService {
   }
   public getLoginArgs(shell: string): string[] {
     return super.getLoginArgs(shell);
+  }
+  public resolveWorkDir(requested?: string): string {
+    return super.resolveWorkDir(requested);
   }
 }
 
@@ -178,7 +185,10 @@ describe('HostTerminalService', () => {
     );
   });
 
-  test('create with cwd passes cwd to spawn', async () => {
+  test('create with cwd passes cwd to spawn when directory exists', async () => {
+    const fs = await import('node:fs');
+    vi.mocked(fs.existsSync).mockReturnValue(true);
+
     const service = new HostTerminalService();
     service.create(mockWebContents as unknown as WebContents, 1, { cwd: '/home/user/project' });
 
@@ -188,6 +198,24 @@ describe('HostTerminalService', () => {
       expect.any(Array),
       expect.objectContaining({
         cwd: '/home/user/project',
+      }),
+    );
+  });
+
+  test('create falls back to homedir when cwd does not exist', async () => {
+    const fs = await import('node:fs');
+    vi.mocked(fs.existsSync).mockReturnValue(false);
+
+    const service = new HostTerminalService();
+    service.create(mockWebContents as unknown as WebContents, 1, { cwd: '/nonexistent/path' });
+
+    const os = await import('node:os');
+    const nodePty = await import('node-pty');
+    expect(nodePty.spawn).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(Array),
+      expect.objectContaining({
+        cwd: os.homedir(),
       }),
     );
   });
@@ -253,6 +281,31 @@ describe('getDefaultShell', () => {
         delete process.env['COMSPEC'];
       }
     }
+  });
+});
+
+describe('resolveWorkDir', () => {
+  test('returns requested path when it exists', async () => {
+    const fs = await import('node:fs');
+    vi.mocked(fs.existsSync).mockReturnValue(true);
+
+    const service = new TestableHostTerminalService();
+    expect(service.resolveWorkDir('/some/path')).toBe('/some/path');
+  });
+
+  test('falls back to homedir when requested path does not exist', async () => {
+    const fs = await import('node:fs');
+    vi.mocked(fs.existsSync).mockReturnValue(false);
+
+    const os = await import('node:os');
+    const service = new TestableHostTerminalService();
+    expect(service.resolveWorkDir('/nonexistent')).toBe(os.homedir());
+  });
+
+  test('returns homedir when no path is requested', async () => {
+    const os = await import('node:os');
+    const service = new TestableHostTerminalService();
+    expect(service.resolveWorkDir()).toBe(os.homedir());
   });
 });
 

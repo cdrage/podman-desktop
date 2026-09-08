@@ -109,14 +109,16 @@ async function fetchComposeLogs(): Promise<void> {
   await Promise.all(promises);
 }
 
-onMount(async () => {
+onMount(() => {
   compose.containers.forEach((container, index) => {
     const colour = ansi256Colours[index % ansi256Colours.length];
     colourizedContainerName.set(container.name, colourizedANSIContainerName(container.name, colour));
   });
-
-  await fetchComposeLogs();
 });
+
+function onTerminalInit(): void {
+  fetchComposeLogs().catch((err: unknown) => console.error('Error fetching compose logs', err));
+}
 </script>
 
 <EmptyScreen icon={NoLogIcon} title="No Log" message="Log output of {compose.name}" hidden={noLogs === false} />
@@ -126,5 +128,5 @@ onMount(async () => {
   class:invisible={noLogs === true}
   class:h-0={noLogs === true}
   class:h-full={noLogs === false}>
-  <TerminalWindow class="h-full" bind:terminal={logsTerminal} convertEol disableStdIn />
+  <TerminalWindow class="h-full" bind:terminal={logsTerminal} on:init={onTerminalInit} convertEol disableStdIn />
 </div>

@@ -17,6 +17,7 @@
  ***********************************************************************/
 
 import { execSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import * as os from 'node:os';
 
 import type { WebContents } from 'electron';
@@ -35,7 +36,7 @@ export class HostTerminalService {
     if (process.env['SHELL']) {
       return process.env['SHELL'];
     }
-    // Electron launched from GUI may not have $SHELL — resolve from system
+    // Electron launched from GUI may not have $SHELL - resolve from system
     try {
       // eslint-disable-next-line n/no-sync
       return execSync('/usr/bin/dscl . -read /Users/$USER UserShell', { encoding: 'utf-8' }).trim().split(':').pop()?.trim() ?? '/bin/zsh';
@@ -46,20 +47,29 @@ export class HostTerminalService {
 
   protected getLoginArgs(shell: string): string[] {
     const base = shell.split('/').pop() ?? '';
-    if (base === 'fish') return ['--login'];
-    // bash, zsh, sh all accept -l for login shell
+    if (base === 'fish') {
+      return ['--login'];
+    }
     return ['-l'];
+  }
+
+  protected resolveWorkDir(requested?: string): string {
+    if (requested && existsSync(requested)) {
+      return requested;
+    }
+    return os.homedir();
   }
 
   create(webContents: WebContents, callbackId: number, options?: { command?: string; args?: string[]; cwd?: string }): number {
     const shell = options?.command ?? this.getDefaultShell();
     const args = options?.command ? (options.args ?? []) : this.getLoginArgs(shell);
+    const cwd = this.resolveWorkDir(options?.cwd);
 
     const pty = spawn(shell, args, {
       name: 'xterm-256color',
       cols: 80,
       rows: 24,
-      cwd: options?.cwd ?? os.homedir(),
+      cwd,
       env: process.env as Record<string, string>,
     });
 
