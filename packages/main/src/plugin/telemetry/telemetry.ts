@@ -40,6 +40,7 @@ import osLocale from 'os-locale';
 import { DefaultConfiguration } from '/@/plugin/default-configuration.js';
 import { Emitter } from '/@/plugin/events/emitter.js';
 import { LockedConfiguration } from '/@/plugin/locked-configuration.js';
+import { MdmConfiguration } from '/@/plugin/mdm-configuration.js';
 import { TelemetryTrustedValue as TypeTelemetryTrustedValue } from '/@/plugin/types/telemetry.js';
 import { stoppedExtensions } from '/@/util.js';
 import product from '/@product.json' with { type: 'json' };
@@ -99,6 +100,8 @@ export class Telemetry {
     private defaultConfiguration: DefaultConfiguration,
     @inject(LockedConfiguration)
     private lockedConfiguration: LockedConfiguration,
+    @inject(MdmConfiguration)
+    private mdmConfiguration: MdmConfiguration,
   ) {
     this.identity = new Identity();
     this.lastTimeEvents = new Map();
@@ -543,6 +546,11 @@ export class Telemetry {
 
     if (lockedTelemetryInfo) {
       this.track(lockedTelemetryInfo.event, lockedTelemetryInfo.eventProperties);
+    }
+
+    const mdmTelemetryInfo = this.mdmConfiguration.getTelemetryInfo();
+    if (mdmTelemetryInfo) {
+      this.track(mdmTelemetryInfo.event, mdmTelemetryInfo.eventProperties);
     }
   }
 }

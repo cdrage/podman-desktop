@@ -37,6 +37,7 @@ import { ConfigurationRegistry } from './configuration-registry.js';
 import type { DefaultConfiguration } from './default-configuration.js';
 import type { Directories } from './directories.js';
 import type { LockedConfiguration } from './locked-configuration.js';
+import type { MdmConfiguration } from './mdm-configuration.js';
 import type { NotificationRegistry } from './tasks/notification-registry.js';
 
 // mock the fs module
@@ -73,6 +74,10 @@ vi.mock(import('./locked-configuration.js'), () => ({
   LockedConfiguration: vi.fn(),
 }));
 
+vi.mock(import('./mdm-configuration.js'), () => ({
+  MdmConfiguration: vi.fn(),
+}));
+
 vi.mock(import('/@product.json'));
 
 let configurationRegistry: ConfigurationRegistry;
@@ -102,6 +107,11 @@ const getLockedContentMock = vi.fn();
 const lockedConfiguration = {
   getContent: getLockedContentMock,
 } as unknown as LockedConfiguration;
+
+const getMdmContentMock = vi.fn();
+const mdmConfiguration = {
+  getContent: getMdmContentMock,
+} as unknown as MdmConfiguration;
 
 beforeEach(async () => {
   vi.resetAllMocks();
@@ -133,7 +143,10 @@ beforeEach(async () => {
   // Setup LockedConfiguration mock for the new functionality
   getLockedContentMock.mockResolvedValue({});
 
-  configurationRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration);
+  // Setup MdmConfiguration mock (returns empty by default)
+  getMdmContentMock.mockResolvedValue({ enforced: {}, defaults: {} });
+
+  configurationRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration, mdmConfiguration);
   await configurationRegistry.init();
 
   const node: IConfigurationNode = {
@@ -251,7 +264,7 @@ test('should work with an invalid configuration file', async () => {
 
   getConfigurationDirectoryMock.mockReturnValue('/my-config-dir');
 
-  configurationRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration);
+  configurationRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration, mdmConfiguration);
   readFileSyncMock.mockReturnValue('invalid JSON content');
 
   // Mock promises methods for this test
@@ -488,7 +501,7 @@ describe('applyManagedDefaults function tests', () => {
     getContentMock.mockResolvedValue(managedDefaults);
 
     // Create the test registry
-    const testRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration);
+    const testRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration, mdmConfiguration);
     await testRegistry.init();
 
     // Setup the values
@@ -516,7 +529,7 @@ describe('applyManagedDefaults function tests', () => {
 
     getContentMock.mockResolvedValue(managedDefaults);
 
-    const testRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration);
+    const testRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration, mdmConfiguration);
     await testRegistry.init();
 
     const configurationValues = (
@@ -533,7 +546,7 @@ describe('applyManagedDefaults function tests', () => {
   test('make sure that the user config remains unchanged when defaults are empty', async () => {
     getContentMock.mockResolvedValue({});
 
-    const testRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration);
+    const testRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration, mdmConfiguration);
     await testRegistry.init();
 
     const configurationValues = (
@@ -556,7 +569,7 @@ describe('applyManagedDefaults function tests', () => {
     };
     getContentMock.mockResolvedValue(managedDefaults);
 
-    const testRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration);
+    const testRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration, mdmConfiguration);
     await testRegistry.init();
     const configurationValues = (
       testRegistry as unknown as { configurationValues: Map<string, { [key: string]: unknown }> }
@@ -586,7 +599,7 @@ describe('applyManagedDefaults function tests', () => {
 
     // Make sure that the console log is called when the settings are applied on each run
     try {
-      const testRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration);
+      const testRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration, mdmConfiguration);
       await testRegistry.init();
 
       expect(mockedConsoleLog).toHaveBeenCalledWith(
@@ -600,7 +613,7 @@ describe('applyManagedDefaults function tests', () => {
   });
 
   test('check the applyManagedDefaults returns array of applied keys', async () => {
-    const testRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration);
+    const testRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration, mdmConfiguration);
     await testRegistry.init();
 
     const configData: Record<string, unknown> = { existingKey: 'existingValue' };
@@ -632,7 +645,7 @@ describe('applyManagedDefaults function tests', () => {
 
     getContentMock.mockResolvedValue(managedDefaults);
 
-    const testRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration);
+    const testRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration, mdmConfiguration);
     await testRegistry.init();
 
     // saveDefault should have been called (via atomic write)
@@ -645,7 +658,7 @@ describe('applyManagedDefaults function tests', () => {
     // No managed defaults
     getContentMock.mockResolvedValue({});
 
-    const testRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration);
+    const testRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration, mdmConfiguration);
     await testRegistry.init();
 
     // saveDefault should NOT have been called (no rename means no atomic write was scheduled)
@@ -660,7 +673,7 @@ describe('applyManagedDefaults function tests', () => {
 
     getContentMock.mockResolvedValue(managedDefaults);
 
-    const testRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration);
+    const testRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration, mdmConfiguration);
     await testRegistry.init();
 
     // Register the configuration with schema default 'myDefault' (same as managed default)
@@ -703,7 +716,7 @@ describe('applyManagedDefaults function tests', () => {
 
     getContentMock.mockResolvedValue(managedDefaults);
 
-    const testRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration);
+    const testRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration, mdmConfiguration);
     await testRegistry.init();
 
     // Register the configuration with schema default 'myDefault' (different from managed default)
@@ -747,7 +760,7 @@ describe('Managed Defaults', () => {
     getContentMock.mockResolvedValue(managedDefaults);
 
     // Create new registry instance to test the managed defaults loading
-    const testRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration);
+    const testRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration, mdmConfiguration);
     await testRegistry.init();
 
     // Access private configurationValues to verify managed defaults were loaded
@@ -764,7 +777,7 @@ describe('Managed Defaults', () => {
     getContentMock.mockResolvedValue({});
 
     // Create new registry instance
-    const testRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration);
+    const testRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration, mdmConfiguration);
     await testRegistry.init();
 
     // Access private configurationValues to verify empty managed defaults
@@ -793,6 +806,7 @@ describe('Managed Locked', () => {
       directories,
       defaultConfiguration,
       testLockedConfiguration,
+      mdmConfiguration,
     );
     await testRegistry.init();
 
@@ -817,6 +831,7 @@ describe('Managed Locked', () => {
       directories,
       defaultConfiguration,
       testLockedConfiguration,
+      mdmConfiguration,
     );
     await testRegistry.init();
 
@@ -841,6 +856,7 @@ describe('Managed Locked', () => {
       directories,
       defaultConfiguration,
       testLockedConfiguration,
+      mdmConfiguration,
     );
     await testRegistry.init();
 
@@ -907,7 +923,7 @@ describe('configuration.override from product.json', () => {
       },
     };
 
-    const testRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration);
+    const testRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration, mdmConfiguration);
     await testRegistry.init();
 
     const node: IConfigurationNode = {
@@ -946,7 +962,7 @@ describe('configuration.override from product.json', () => {
       },
     };
 
-    const testRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration);
+    const testRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration, mdmConfiguration);
     await testRegistry.init();
 
     const node: IConfigurationNode = {
@@ -987,7 +1003,7 @@ describe('configuration.override from product.json', () => {
       },
     };
 
-    const testRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration);
+    const testRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration, mdmConfiguration);
     await testRegistry.init();
 
     const nodes: IConfigurationNode[] = [
@@ -1040,7 +1056,7 @@ describe('configuration.override from product.json', () => {
     // Empty configuration.override
     (vi.mocked(product).configuration.override as { [key: string]: Partial<IConfigurationPropertySchema> }) = {};
 
-    const testRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration);
+    const testRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration, mdmConfiguration);
     await testRegistry.init();
 
     const node: IConfigurationNode = {
@@ -1074,7 +1090,7 @@ describe('configuration.override from product.json', () => {
       | { [key: string]: Partial<IConfigurationPropertySchema> }
       | undefined) = undefined;
 
-    const testRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration);
+    const testRegistry = new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration, mdmConfiguration);
     await testRegistry.init();
 
     const node: IConfigurationNode = {

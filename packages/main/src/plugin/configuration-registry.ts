@@ -35,6 +35,7 @@ import type {
 } from '@podman-desktop/core-api/configuration';
 import {
   CONFIGURATION_DEFAULT_SCOPE,
+  CONFIGURATION_LOCKED_KEY,
   CONFIGURATION_SYSTEM_MANAGED_DEFAULTS_SCOPE,
   CONFIGURATION_SYSTEM_MANAGED_LOCKED_SCOPE,
 } from '@podman-desktop/core-api/configuration';
@@ -48,6 +49,7 @@ import { Directories } from './directories.js';
 import { Emitter } from './events/emitter.js';
 import { LockedKeys } from './lock-configuration.js';
 import { LockedConfiguration } from './locked-configuration.js';
+import { MdmConfiguration } from './mdm-configuration.js';
 import { Disposable } from './types/disposable.js';
 import { AtomicFileWriter } from './util/atomic-file-writer.js';
 
@@ -80,6 +82,8 @@ export class ConfigurationRegistry implements IConfigurationRegistry, IAsyncDisp
     private defaultConfiguration: DefaultConfiguration,
     @inject(LockedConfiguration)
     private lockedConfiguration: LockedConfiguration,
+    @inject(MdmConfiguration)
+    private mdmConfiguration: MdmConfiguration,
   ) {
     this.configurationProperties = {};
     this.configurationContributors = [];
@@ -139,12 +143,32 @@ export class ConfigurationRegistry implements IConfigurationRegistry, IAsyncDisp
       configData = {};
     }
 
-    // Load managed defaults
+    // Load managed defaults from JSON file
     const defaults = await this.defaultConfiguration.getContent();
-    this.configurationValues.set(CONFIGURATION_SYSTEM_MANAGED_DEFAULTS_SCOPE, defaults);
 
-    // Load managed locked
+    // Load managed locked from JSON file
     const locked = await this.lockedConfiguration.getContent();
+
+    // Load Apple MDM managed preferences (macOS only, no-op on other platforms)
+    const mdmContent = await this.mdmConfiguration.getContent();
+
+    // Merge MDM defaults into JSON defaults (MDM wins on conflict)
+    for (const [key, value] of Object.entries(mdmContent.defaults)) {
+      defaults[key] = value;
+    }
+
+    // Merge MDM enforced keys: set their values in defaults and add to locked list
+    for (const [key, value] of Object.entries(mdmContent.enforced)) {
+      defaults[key] = value;
+    }
+
+    const lockedArray = (locked[CONFIGURATION_LOCKED_KEY] as string[] | undefined) ?? [];
+    const mdmEnforcedKeys = Object.keys(mdmContent.enforced);
+    if (mdmEnforcedKeys.length > 0) {
+      locked[CONFIGURATION_LOCKED_KEY] = [...new Set([...lockedArray, ...mdmEnforcedKeys])];
+    }
+
+    this.configurationValues.set(CONFIGURATION_SYSTEM_MANAGED_DEFAULTS_SCOPE, defaults);
     this.configurationValues.set(CONFIGURATION_SYSTEM_MANAGED_LOCKED_SCOPE, locked);
 
     // Apply managed defaults to user config for any undefined keys

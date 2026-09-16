@@ -29,6 +29,7 @@ import { ConfigurationRegistry } from '/@/plugin/configuration-registry.js';
 import type { DefaultConfiguration } from '/@/plugin/default-configuration.js';
 import type { Directories } from '/@/plugin/directories.js';
 import type { LockedConfiguration } from '/@/plugin/locked-configuration.js';
+import type { MdmConfiguration } from '/@/plugin/mdm-configuration.js';
 import type { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import * as util from '/@/util.js';
 
@@ -78,6 +79,7 @@ beforeAll(() => {
     {} as Directories,
     {} as DefaultConfiguration,
     {} as LockedConfiguration,
+    { getContent: vi.fn().mockResolvedValue({ enforced: {}, defaults: {} }) } as unknown as MdmConfiguration,
   );
   configurationRegistry.registerConfigurations = vi.fn();
   configurationRegistry.deregisterConfigurations = vi.fn();

@@ -25,6 +25,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { ConfigurationRegistry } from '/@/plugin/configuration-registry.js';
 import type { DefaultConfiguration } from '/@/plugin/default-configuration.js';
 import type { LockedConfiguration } from '/@/plugin/locked-configuration.js';
+import type { MdmConfiguration } from '/@/plugin/mdm-configuration.js';
 import { TelemetryTrustedValue } from '/@/plugin/types/telemetry.js';
 import product from '/@product.json' with { type: 'json' };
 
@@ -52,6 +53,11 @@ const lockedConfigurationMock = {
   getTelemetryInfo: vi.fn(),
 } as unknown as LockedConfiguration;
 
+const mdmConfigurationMock = {
+  getContent: vi.fn(),
+  getTelemetryInfo: vi.fn(),
+} as unknown as MdmConfiguration;
+
 vi.mock(
   import('../../../../../telemetry.json'),
   () =>
@@ -73,7 +79,7 @@ vi.mock(import('/@product.json'));
 
 class TelemetryTest extends Telemetry {
   constructor() {
-    super(configurationRegistryMock, defaultConfigurationMock, lockedConfigurationMock);
+    super(configurationRegistryMock, defaultConfigurationMock, lockedConfigurationMock, mdmConfigurationMock);
   }
   public getLastTimeEvents(): Map<string, number> {
     return this.lastTimeEvents;

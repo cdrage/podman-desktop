@@ -35,6 +35,7 @@ import { ensureURL, Proxy } from '/@/plugin/proxy.js';
 import type { DefaultConfiguration } from './default-configuration.js';
 import type { Directories } from './directories.js';
 import type { LockedConfiguration } from './locked-configuration.js';
+import type { MdmConfiguration } from './mdm-configuration.js';
 import { getProxySettingsFromSystem } from './proxy-system.js';
 
 const URL = 'https://podman-desktop.io';
@@ -91,8 +92,12 @@ const lockedConfiguration = {
   getContent: vi.fn().mockResolvedValue({}),
 } as unknown as LockedConfiguration;
 
+const mdmConfiguration = {
+  getContent: vi.fn().mockResolvedValue({ enforced: {}, defaults: {} }),
+} as unknown as MdmConfiguration;
+
 function getConfigurationRegistry(): ConfigurationRegistry {
-  return new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration);
+  return new ConfigurationRegistry(apiSender, directories, defaultConfiguration, lockedConfiguration, mdmConfiguration);
 }
 
 async function buildProxy(): Promise<ProxyServer> {

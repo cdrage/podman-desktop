@@ -25,6 +25,7 @@ import { ConfigurationRegistry } from './configuration-registry.js';
 import type { DefaultConfiguration } from './default-configuration.js';
 import type { Directories } from './directories.js';
 import type { LockedConfiguration } from './locked-configuration.js';
+import type { MdmConfiguration } from './mdm-configuration.js';
 
 vi.mock(import('/@/util.js'), () => {
   return {
@@ -41,6 +42,7 @@ beforeEach(() => {
     {} as Directories,
     {} as DefaultConfiguration,
     {} as LockedConfiguration,
+    { getContent: vi.fn().mockResolvedValue({ enforced: {}, defaults: {} }) } as unknown as MdmConfiguration,
   );
   closeBehavior = new CloseBehavior(configurationRegistry);
 });
