@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { writable } from 'svelte/store';
+import { get, writable } from 'svelte/store';
 
 export interface HostTerminalTab {
   id: number;
@@ -24,6 +24,11 @@ export interface HostTerminalTab {
   agentCommand?: string;
   agentArgs?: string[];
   cwd?: string;
+}
+
+export enum TerminalTabPlacement {
+  Before = 'before',
+  After = 'after',
 }
 
 export const hostTerminalTabs = writable<HostTerminalTab[]>([]);
@@ -37,10 +42,41 @@ hostTerminalPanelHeight.subscribe(h => sessionStorage.setItem(HEIGHT_KEY, String
 
 const CWD_KEY = 'host-terminal-working-directory';
 const storedCwd = localStorage.getItem(CWD_KEY);
+const RECENT_FOLDERS_KEY = 'host-terminal-recent-folders';
+const MAX_RECENT_FOLDERS = 8;
+
+function readRecentFolders(): string[] {
+  try {
+    const stored: unknown = JSON.parse(localStorage.getItem(RECENT_FOLDERS_KEY) ?? '[]');
+    if (Array.isArray(stored)) {
+      return [
+        ...new Set(stored.filter((folder): folder is string => typeof folder === 'string' && folder.length > 0)),
+      ].slice(0, MAX_RECENT_FOLDERS);
+    }
+  } catch {
+    // Ignore invalid saved history so the terminal remains available.
+  }
+  return [];
+}
+
+export const recentTerminalFolders = writable<string[]>(readRecentFolders());
+recentTerminalFolders.subscribe(folders => localStorage.setItem(RECENT_FOLDERS_KEY, JSON.stringify(folders)));
+
+function rememberTerminalFolder(folder: string | undefined): void {
+  if (!folder) {
+    return;
+  }
+
+  recentTerminalFolders.update(folders =>
+    [folder, ...folders.filter(entry => entry !== folder)].slice(0, MAX_RECENT_FOLDERS),
+  );
+}
+
 export const agentWorkingDirectory = writable<string | undefined>(storedCwd ?? undefined);
 agentWorkingDirectory.subscribe(d => {
   if (d) {
     localStorage.setItem(CWD_KEY, d);
+    rememberTerminalFolder(d);
   } else {
     localStorage.removeItem(CWD_KEY);
   }
@@ -71,9 +107,11 @@ export function addTerminalTab(
     name: options?.name ?? `Terminal ${tabCounter}`,
     agentCommand: options?.agentCommand,
     agentArgs: options?.agentArgs,
-    cwd: options?.cwd,
+    // Keyboard shortcuts use the default folder unless the caller supplies one.
+    cwd: options && 'cwd' in options ? options.cwd : get(agentWorkingDirectory),
   };
   hostTerminalTabs.update(tabs => [...tabs, tab]);
+  rememberTerminalFolder(tab.cwd);
   activeHostTerminalTabId.set(id);
 }
 
@@ -96,6 +134,22 @@ export function clearAllTerminalTabs(): void {
   hostTerminalTabs.set([]);
   activeHostTerminalTabId.set(undefined);
   tabCounter = 0;
+}
+
+export function moveTerminalTab(id: number, targetId: number, placement: TerminalTabPlacement): void {
+  hostTerminalTabs.update(tabs => {
+    const tab = tabs.find(entry => entry.id === id);
+    if (!tab || id === targetId || !tabs.some(entry => entry.id === targetId)) {
+      return tabs;
+    }
+
+    // Keep tab identities and the active session intact when the order changes.
+    const reordered = tabs.filter(entry => entry.id !== id);
+    const targetIndex = reordered.findIndex(entry => entry.id === targetId);
+    const insertIndex = placement === TerminalTabPlacement.Before ? targetIndex : targetIndex + 1;
+    reordered.splice(insertIndex, 0, tab);
+    return reordered;
+  });
 }
 
 export function updateTerminalTabName(id: number, name: string): void {

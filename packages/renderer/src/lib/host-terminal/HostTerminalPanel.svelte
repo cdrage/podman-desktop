@@ -1,5 +1,5 @@
 <script lang="ts">
-import { faCircleInfo, faFolderOpen, faPlus, faRobot, faTerminal, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { faCircleInfo, faRobot } from '@fortawesome/free-solid-svg-icons';
 import { Tooltip } from '@podman-desktop/ui-svelte';
 import Fa from 'svelte-fa';
 
@@ -18,6 +18,7 @@ import {
 
 import { buildContextArgs, gatherAgentContext, isMcpServerRunning } from './agent-context';
 import HostTerminalInstance from './HostTerminalInstance.svelte';
+import HostTerminalTabs from './HostTerminalTabs.svelte';
 
 interface DetectedAgent {
   binary: string;
@@ -42,10 +43,8 @@ let followUI = $state(false);
 let mcpAvailable = $state(false);
 let showMenu = $state(false);
 let menuRef = $state<HTMLDivElement>();
-let selectedDir = $state<string | undefined>(undefined);
 
 hostTerminalPanelHeight.subscribe(h => (panelHeight = h));
-agentWorkingDirectory.subscribe(d => (selectedDir = d));
 agentIncludeContext.subscribe(v => (includeContext = v));
 agentFollowUI.subscribe(v => (followUI = v));
 
@@ -57,20 +56,21 @@ $effect(() => {
 
 async function createTerminal(agent?: DetectedAgent): Promise<void> {
   const tabId = getNextTabId();
+  const cwd = $agentWorkingDirectory;
   if (agent) {
     let args: string[] | undefined;
     if (includeContext) {
-      const context = await gatherAgentContext(selectedDir, followUI);
+      const context = await gatherAgentContext(cwd, followUI);
       args = buildContextArgs(agent.binary, context);
     }
     addTerminalTab(tabId, {
       name: agent.label,
       agentCommand: agent.path,
       agentArgs: args,
-      cwd: selectedDir,
+      cwd,
     });
   } else {
-    addTerminalTab(tabId, selectedDir ? { cwd: selectedDir } : undefined);
+    addTerminalTab(tabId, { cwd });
   }
   showMenu = false;
 }
@@ -92,30 +92,8 @@ async function toggleMenu(): Promise<void> {
   showMenu = !showMenu;
 }
 
-async function browseDirectory(): Promise<void> {
-  const result = await window.openDialog({
-    title: 'Select working directory',
-    selectors: ['openDirectory'],
-  });
-  if (result?.[0]) {
-    selectedDir = result[0];
-    agentWorkingDirectory.set(result[0]);
-  }
-}
-
-function clearDirectory(): void {
-  selectedDir = undefined;
-  agentWorkingDirectory.set(undefined);
-}
-
 function syncFollowUIConfig(enabled: boolean): void {
   window.updateConfigurationValue('mcp.server.followUI', enabled).catch(console.warn);
-}
-
-function displayPath(fullPath: string): string {
-  if (fullPath.length <= 30) return fullPath;
-  const parts = fullPath.split(/[/\\]/);
-  return '.../' + (parts.pop() ?? fullPath);
 }
 
 function handleWindowClick(e: MouseEvent): void {
@@ -137,8 +115,8 @@ function closeTab(id: number): void {
   }
 }
 
-function selectTab(id: number): void {
-  activeHostTerminalTabId.set(id);
+function newTerminal(): void {
+  createTerminal().catch(console.error);
 }
 
 function startResize(e: MouseEvent): void {
@@ -180,44 +158,8 @@ function onMouseUp(): void {
     <!-- Tab bar -->
     <div
       class="flex items-center h-7 shrink-0 bg-[var(--pd-global-nav-bg)] border-b border-[var(--pd-global-nav-bg-border)] text-xs select-none">
-      <div class="flex items-center h-full overflow-x-auto">
-        {#each $hostTerminalTabs as tab (tab.id)}
-          <!-- svelte-ignore a11y_click_events_have_key_events -->
-          <!-- svelte-ignore a11y_no_static_element_interactions -->
-          <div
-            class="group flex items-center gap-1.5 h-full px-3 border-r border-[var(--pd-global-nav-bg-border)] whitespace-nowrap cursor-pointer
-              {tab.id === $activeHostTerminalTabId
-              ? 'bg-[var(--pd-content-bg)] text-[var(--pd-content-text)] border-t-2 border-t-[var(--pd-button-primary-bg)]'
-              : 'text-[var(--pd-global-nav-icon)] hover:bg-[var(--pd-global-nav-bg-hover)] border-t-2 border-t-transparent'}"
-            onclick={(): void => selectTab(tab.id)}>
-            <Fa icon={tab.agentCommand ? faRobot : faTerminal} size="0.75x" />
-            <span class="max-w-[120px] truncate">{tab.name}</span>
-            <button
-              class="ml-1 rounded hover:bg-[var(--pd-global-nav-bg-hover)] p-0.5
-                {tab.id === $activeHostTerminalTabId ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}"
-              onclick={(e: MouseEvent): void => { e.stopPropagation(); closeTab(tab.id); }}
-              aria-label="Close {tab.name}">
-              <Fa icon={faXmark} size="0.7x" />
-            </button>
-          </div>
-        {/each}
-      </div>
-      <div class="ml-auto flex items-center">
-        {#if selectedDir}
-          <span
-            class="px-2 text-[10px] text-[var(--pd-global-nav-icon)] opacity-60 truncate max-w-[200px] select-text cursor-default"
-            title={selectedDir}>
-            {displayPath(selectedDir)}
-          </span>
-        {/if}
-        <Tooltip tip="New Terminal" top>
-          <button
-            class="flex items-center justify-center w-7 h-full text-[var(--pd-global-nav-icon)] hover:bg-[var(--pd-global-nav-bg-hover)]"
-            onclick={(): void => { createTerminal().catch(console.error); }}
-            aria-label="New Terminal">
-            <Fa icon={faPlus} size="0.8x" />
-          </button>
-        </Tooltip>
+      <HostTerminalTabs onCreate={newTerminal} onClose={closeTab} />
+      <div class="ml-auto flex items-center min-w-0 shrink-0">
         <div class="relative" bind:this={menuRef}>
           <Tooltip tip="Launch AI Agent" top>
             <button
@@ -242,28 +184,6 @@ function onMouseUp(): void {
               {#if detectedAgents.length === 0}
                 <div class="px-3 py-1.5 text-[var(--pd-content-text)] opacity-50">No agents detected</div>
               {/if}
-              <div class="border-t border-[var(--pd-content-card-border)] mt-1 pt-1 px-3 py-1.5">
-                <div class="flex items-center gap-2 text-[var(--pd-content-text)]">
-                  <button
-                    class="flex items-center gap-2 flex-1 min-w-0 text-left cursor-pointer
-                      hover:text-[var(--pd-button-primary-bg)] whitespace-nowrap"
-                    onclick={(): void => { browseDirectory().catch(console.error); }}
-                    aria-label="Select working directory">
-                    <Fa icon={faFolderOpen} size="0.8x" class="w-4 text-center shrink-0" />
-                    <span class="truncate" title={selectedDir ?? ''}>
-                      {selectedDir ? displayPath(selectedDir) : 'Working directory...'}
-                    </span>
-                  </button>
-                  {#if selectedDir}
-                    <button
-                      class="shrink-0 rounded hover:bg-[var(--pd-global-nav-bg-hover)] p-0.5"
-                      onclick={(e: MouseEvent): void => { e.stopPropagation(); clearDirectory(); }}
-                      aria-label="Clear working directory">
-                      <Fa icon={faXmark} size="0.7x" />
-                    </button>
-                  {/if}
-                </div>
-              </div>
               <div class="border-t border-[var(--pd-content-card-border)] mt-1 pt-1 px-3 py-1.5 space-y-1.5">
                 <label class="flex items-center gap-2 text-[var(--pd-content-text)] whitespace-nowrap
                   {mcpAvailable ? 'cursor-pointer' : 'opacity-40 cursor-not-allowed'}">
@@ -295,7 +215,12 @@ function onMouseUp(): void {
     <div class="flex-1 min-h-0 overflow-hidden bg-[var(--pd-terminal-background)]">
       {#each $hostTerminalTabs as tab (tab.id)}
         {#key tab.id}
-          <div class="h-full" class:hidden={tab.id !== $activeHostTerminalTabId}>
+          <div
+            class="h-full"
+            role="tabpanel"
+            id="host-terminal-panel-{tab.id}"
+            aria-labelledby="host-terminal-tab-{tab.id}"
+            class:hidden={tab.id !== $activeHostTerminalTabId}>
             <HostTerminalInstance
               tabId={tab.id}
               active={tab.id === $activeHostTerminalTabId}
