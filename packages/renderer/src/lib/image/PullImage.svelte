@@ -1,17 +1,17 @@
 <script lang="ts">
-import { faArrowCircleDown, faBan, faCog, faTriangleExclamation } from '@fortawesome/free-solid-svg-icons';
+import { faArrowCircleDown, faTriangleExclamation } from '@fortawesome/free-solid-svg-icons';
 import type { ImageSearchOptions, ProviderContainerConnectionInfo, PullEvent } from '@podman-desktop/core-api';
 import { NavigationPage, PreferredRegistriesSettings } from '@podman-desktop/core-api';
-import { Button, ButtonRow, Checkbox, ErrorMessage, Link, Tooltip } from '@podman-desktop/ui-svelte';
+import { Button, Checkbox, ErrorMessage, Link, Tooltip } from '@podman-desktop/ui-svelte';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 import type { Terminal } from '@xterm/xterm';
 import { onMount, tick } from 'svelte';
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 import { router } from 'tinro';
 
+import Dialog from '/@/lib/dialogs/Dialog.svelte';
 import ContainerConnectionDropdown from '/@/lib/forms/ContainerConnectionDropdown.svelte';
 import { ImageUtils } from '/@/lib/image/image-utils';
-import EngineFormPage from '/@/lib/ui/EngineFormPage.svelte';
 import TerminalWindow from '/@/lib/ui/TerminalWindow.svelte';
 import type { TypeaheadItem } from '/@/lib/ui/Typeahead';
 import Typeahead from '/@/lib/ui/Typeahead.svelte';
@@ -33,6 +33,7 @@ let logsPull = $state<Terminal>();
 let pullError = $state('');
 let pullInProgress = $state(false);
 let pullFinished = $state(false);
+let showLogs = $state(false);
 let pullCancellableTokenId = $state<number | undefined>();
 let pullCancellationRequested = $state(false);
 let shortnameImages: string[] = [];
@@ -43,10 +44,11 @@ let searchResult = $state<TypeaheadItem[]>([]);
 let sortResults = $state<(a: string, b: string) => number>();
 
 interface Props {
+  closeCallback: () => void;
   imageToPull?: string;
 }
 
-let { imageToPull = $bindable() }: Props = $props();
+let { closeCallback, imageToPull = $bindable() }: Props = $props();
 
 let providerConnections = $derived(
   $providerInfos
@@ -127,6 +129,10 @@ function callback(event: PullEvent): void {
 }
 
 async function pullImage(): Promise<void> {
+  if (pullInProgress || pullFinished) {
+    return;
+  }
+
   if (!selectedProviderConnection) {
     pullError = 'No current provider connection';
     return;
@@ -139,13 +145,15 @@ async function pullImage(): Promise<void> {
 
   lineNumberPerId.clear();
   lineIndex = 0;
+  pullInProgress = true;
+  showLogs = true;
   await tick();
+  window.dispatchEvent(new Event('resize'));
   logsPull?.clear();
 
   // reset error
   pullError = '';
 
-  pullInProgress = true;
   try {
     pullCancellationRequested = false;
     pullCancellableTokenId = await window.getCancellableTokenSource();
@@ -195,8 +203,13 @@ async function pullImage(): Promise<void> {
   }
 }
 
-async function pullImageFinished(): Promise<void> {
-  router.goto('/images');
+function closeDialog(): void {
+  // Keep the progress and cancellation controls available until the pull stops.
+  if (pullInProgress) {
+    return;
+  }
+
+  closeCallback();
 }
 
 async function getFirstPulledImageInfo(): Promise<ImageInfoUI | undefined> {
@@ -223,6 +236,7 @@ async function getFirstPulledImageInfo(): Promise<ImageInfoUI | undefined> {
 async function gotoImageDetails(): Promise<void> {
   const image = await getFirstPulledImageInfo();
   if (image) {
+    closeCallback();
     router.goto(`/images/${image.id}/${image.engineId}/${image.base64RepoTag}/summary`);
   }
 }
@@ -230,6 +244,7 @@ async function gotoImageDetails(): Promise<void> {
 async function gotoImageRun(): Promise<void> {
   const image = await getFirstPulledImageInfo();
   if (image) {
+    closeCallback();
     handleNavigation({
       page: NavigationPage.IMAGE_RUN,
       parameters: {
@@ -249,7 +264,17 @@ async function cancelPullImage(): Promise<void> {
 }
 
 async function gotoManageRegistries(): Promise<void> {
+  if (pullInProgress) {
+    return;
+  }
+
+  closeCallback();
   router.goto('/preferences/registries');
+}
+
+function gotoResources(): void {
+  closeCallback();
+  router.goto('/preferences/resources');
 }
 
 onMount(() => {
@@ -284,6 +309,12 @@ function validateImageName(image: string): void {
     imageNameInvalid = undefined;
   }
   imageToPull = image;
+}
+
+async function onImageChange(image: string): Promise<void> {
+  validateImageName(image);
+  await resolveShortname();
+  await searchLatestTag();
 }
 
 // allTags is defined if last search was a query to search tags of an image
@@ -427,105 +458,105 @@ async function searchFunction(value: string): Promise<void> {
 }
 </script>
 
-<EngineFormPage
-  title="Pull an image from a registry"
-  inProgress={pullInProgress}
-  showEmptyScreen={providerConnections.length === 0}>
-  {#snippet icon()}
-    <i class="fas fa-arrow-circle-down fa-2x" aria-hidden="true"></i>
-  {/snippet}
-
-  {#snippet actions()}
-    <Button on:click={gotoManageRegistries} icon={faCog}>Manage registries</Button>
-  {/snippet}
-
+<Dialog title="Pull image" onclose={closeDialog}>
   {#snippet content()}
-  <div class="space-y-6">
-    <div class="w-full">
+    {#if providerConnections.length === 0}
+      <p>
+        Start a container engine in <Link on:click={gotoResources}>Settings &gt; Resources</Link> to pull an image.
+      </p>
+    {:else}
+      <div class="flex flex-col space-y-5">
+        <p>
+          Specify preferred registries in <Link on:click={gotoManageRegistries}>Manage registries</Link>.
+        </p>
 
-      <div class="self-center text-[var(--pd-table-body-text)] pb-4">Specify preferred registries for pulling images in <Link on:click={gotoManageRegistries}>Settings &gt; Registries</Link>.</div>
+        <div>
+          <label for="imageName" class="block mb-2 font-medium text-[var(--pd-modal-text)]">Image to pull</label>
+          <div class="flex flex-col">
+            <Typeahead
+              id="imageName"
+              name="imageName"
+              placeholder="Image name"
+              onInputChange={searchFunction}
+              resultItems={searchResult}
+              compare={sortResults}
+              onChange={onImageChange}
+              onEnter={pullImage}
+              disabled={pullFinished || pullInProgress}
+              error={!isValidName}
+              required
+              initialFocus />
+            {#if selectedProviderConnection?.type === 'podman' && podmanFQN}
+              <div class="absolute mt-2 ml-[-18px] self-start">
+                <Tooltip tip="Shortname images will be pulled from Docker Hub" topRight>
+                  <Icon size="1.1x" class="text-[var(--pd-state-warning)]" icon={faTriangleExclamation} />
+                </Tooltip>
+              </div>
+            {/if}
+          </div>
+          {#if selectedProviderConnection?.type === 'podman' && podmanFQN}
+            <Checkbox
+              class="pt-2"
+              bind:checked={usePodmanFQN}
+              title="Use Podman FQN"
+              disabled={pullFinished || pullInProgress}>Use Podman FQN for shortname image</Checkbox>
+          {/if}
+          {#if imageNameInvalid}
+            <ErrorMessage error={imageNameInvalid} />
+          {/if}
+          {#if latestTagMessage}
+            <WarningMessage error={latestTagMessage} />
+          {/if}
+        </div>
 
-      <label for="imageName" class="block mb-2 font-semibold text-[var(--pd-content-card-header-text)]"
-        >Image to pull</label>
-      <div class="flex flex-col">
-        <Typeahead
-          id="imageName"
-          name="imageName"
-          placeholder="Image name"
-          onInputChange={searchFunction}
-          resultItems={searchResult}
-          compare={sortResults}
-          onChange={async (s: string): Promise<void> => {
-            validateImageName(s);
-            await resolveShortname();
-            await searchLatestTag();
-          }}
-          onEnter={pullImage}
-          disabled={pullFinished || pullInProgress}
-          error={!isValidName}
-          required
-          initialFocus />
-        {#if selectedProviderConnection?.type === 'podman' && podmanFQN}
-          <div class="absolute mt-2 ml-[-18px] self-start">
-            <Tooltip tip="Shortname images will be pulled from Docker Hub" topRight>
-              <Icon size="1.1x" class="text-[var(--pd-state-warning)]" icon={faTriangleExclamation} />
-            </Tooltip>
+        {#if providerConnections.length > 1}
+          <div>
+            <label for="providerChoice" class="block mb-2 font-medium text-[var(--pd-modal-text)]">Container Engine</label>
+            <ContainerConnectionDropdown
+              id="providerChoice"
+              name="providerChoice"
+              bind:value={selectedProviderConnection}
+              connections={providerConnections}
+              disabled={pullFinished || pullInProgress} />
           </div>
         {/if}
-      </div>
-      {#if selectedProviderConnection?.type === 'podman' && podmanFQN}
-        <Checkbox class="pt-2" bind:checked={usePodmanFQN} title="Use Podman FQN" disabled={podmanFQN === ''}
-          >Use Podman FQN for shortname image</Checkbox>
-      {/if}
-      {#if imageNameInvalid}
-        <ErrorMessage error={imageNameInvalid} />
-      {/if}
-      {#if latestTagMessage}
-        <WarningMessage error={latestTagMessage} />
-      {/if}
 
-      {#if providerConnections.length > 1}
-        <div class="pt-4">
-          <label for="providerChoice" class="block mb-2 font-semibold text-[var(--pd-content-card-header-text)]"
-            >Container Engine</label>
-          <ContainerConnectionDropdown
-            id="providerChoice"
-            name="providerChoice"
-            bind:value={selectedProviderConnection}
-            connections={providerConnections}/>
+        <div class="h-40" hidden={!showLogs}>
+          <TerminalWindow class="h-full" bind:terminal={logsPull} />
         </div>
-      {/if}
-      {#if providerConnections.length === 1}
-        <input type="hidden" name="providerChoice" readonly bind:value={selectedProviderConnection} />
-      {/if}
-    </div>
-    <footer>
-      <div class="w-full flex flex-col justify-end">
-        <ButtonRow>
-          {#if !pullFinished}
-            <Button
-              icon={faArrowCircleDown}
-              disabled={imageNameIsInvalid || pullInProgress}
-              on:click={pullImage}
-              inProgress={pullInProgress}>
-              {pullInProgress ? 'Pulling image' : 'Pull image'}
-            </Button>
-            {#if pullInProgress}
-              <Button icon={faBan} disabled={!pullInProgress} on:click={cancelPullImage} type="secondary">Cancel</Button>
-            {/if}
-          {:else}
-            <Button type='link' on:click={pullImageFinished}>Close</Button>
-            <Button type='secondary' on:click={gotoImageDetails}>View details</Button>
-            <Button type='primary' on:click={gotoImageRun}>Run</Button>
-          {/if}
-        </ButtonRow>
-        {#if pullError}
-          <ErrorMessage error={pullError} />
-        {/if}
-        <RecommendedRegistry bind:imageError={pullError} imageName={imageToPull} />
       </div>
-    </footer>
-    <TerminalWindow bind:terminal={logsPull} />
-  </div>
+    {/if}
   {/snippet}
-</EngineFormPage>
+
+  {#snippet validation()}
+    {#if pullError}
+      <ErrorMessage error={pullError} />
+    {/if}
+    <RecommendedRegistry bind:imageError={pullError} imageName={imageToPull} />
+  {/snippet}
+
+  {#snippet buttons()}
+    {#if pullFinished}
+      <Button type="link" on:click={closeDialog}>Done</Button>
+      <Button type="secondary" on:click={gotoImageDetails}>View details</Button>
+      <Button type="primary" on:click={gotoImageRun}>Run</Button>
+    {:else}
+      {#if pullInProgress}
+        <Button
+          type="link"
+          disabled={pullCancellableTokenId === undefined || pullCancellationRequested}
+          on:click={cancelPullImage}>Cancel</Button>
+      {:else}
+        <Button type="link" on:click={closeDialog}>Cancel</Button>
+      {/if}
+      <Button
+        type="primary"
+        icon={faArrowCircleDown}
+        disabled={imageNameIsInvalid || pullInProgress || providerConnections.length === 0}
+        on:click={pullImage}
+        inProgress={pullInProgress}>
+        {pullInProgress ? 'Pulling image' : 'Pull image'}
+      </Button>
+    {/if}
+  {/snippet}
+</Dialog>

@@ -39,6 +39,7 @@ import ImageColumnStatus from './ImageColumnStatus.svelte';
 import ImageEmptyScreen from './ImageEmptyScreen.svelte';
 import type { ImageInfoUI } from './ImageInfoUI';
 import NoContainerEngineEmptyScreen from './NoContainerEngineEmptyScreen.svelte';
+import PullImage from './PullImage.svelte';
 
 interface Props {
   searchTerm?: string;
@@ -182,8 +183,14 @@ function gotoBuildImage(): void {
   router.goto('/images/build');
 }
 
-function gotoPullImage(): void {
-  router.goto('/images/pull');
+let showPullImage = $state(false);
+
+function openPullImage(): void {
+  showPullImage = true;
+}
+
+function closePullImage(): void {
+  showPullImage = false;
 }
 
 function importImage(): void {
@@ -325,7 +332,7 @@ function label(item: ImageInfoUI): string {
       aria-label="Import Image">
       Import
     </Button>
-    <Button type="secondary" on:click={gotoPullImage} title="Pull Image From a Registry" icon={faArrowCircleDown}>Pull</Button>
+    <Button type="secondary" on:click={openPullImage} title="Pull Image From a Registry" icon={faArrowCircleDown}>Pull</Button>
     <Button type="primary" on:click={gotoBuildImage} title="Build Image From Containerfile" icon={faCube}>Build</Button>
   {/snippet}
 
@@ -381,3 +388,7 @@ function label(item: ImageInfoUI): string {
   </div>
   {/snippet}
 </NavPage>
+
+{#if showPullImage}
+  <PullImage closeCallback={closePullImage} />
+{/if}

@@ -36,6 +36,8 @@ import { viewsContributions } from '/@/stores/views';
 
 import ImagesList from './ImagesList.svelte';
 
+vi.mock(import('/@/lib/ui/TerminalWindow.svelte'));
+
 beforeEach(() => {
   providerInfos.set([]);
   imagesInfos.set([]);
@@ -61,6 +63,36 @@ test('Expect no container engines being displayed', async () => {
   render(ImagesList);
   const noEngine = screen.getByRole('heading', { name: 'No Container Engine' });
   expect(noEngine).toBeInTheDocument();
+});
+
+test('Pull opens a modal and preserves the Images page', async () => {
+  const gotoSpy = vi.spyOn(router, 'goto').mockImplementation(() => {});
+  providerInfos.set([
+    {
+      containerConnections: [{ name: 'podman', status: 'started', type: 'podman' }],
+    } as ProviderInfo,
+  ]);
+  vi.mocked(window.resolveShortnameImage).mockResolvedValue([]);
+  vi.mocked(window.listImageTagsInRegistry).mockResolvedValue(['latest']);
+  render(ImagesList);
+
+  const pullButton = screen.getByRole('button', { name: 'Pull' });
+  await userEvent.click(pullButton);
+
+  const dialog = screen.getByRole('dialog', { name: 'Pull image' });
+  screen.getByRole('region', { name: 'images' });
+  expect(gotoSpy).not.toHaveBeenCalled();
+
+  await userEvent.click(within(dialog).getByRole('textbox', { name: 'Image to pull' }));
+  await userEvent.paste('alpine');
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+  expect(screen.queryByRole('dialog', { name: 'Pull image' })).not.toBeInTheDocument();
+  expect(pullButton).toHaveFocus();
+
+  await userEvent.click(pullButton);
+  expect(screen.getByRole('textbox', { name: 'Image to pull' })).toHaveValue('');
+  expect(screen.getByRole('button', { name: 'Pull image' })).toBeDisabled();
+  gotoSpy.mockRestore();
 });
 
 test('Expect images being ordered by newest first', async () => {

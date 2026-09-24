@@ -99,10 +99,79 @@ afterEach(() => {
 });
 
 const buttonText = 'Pull image';
+const closeCallback = vi.fn();
 
 describe('PullImage', () => {
+  test('Displays the pull controls in a modal', () => {
+    render(PullImage, { closeCallback });
+
+    const dialog = screen.getByRole('dialog', { name: 'Pull image' });
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    within(dialog).getByRole('textbox', { name: 'Image to pull' });
+    within(dialog).getByRole('button', { name: 'Cancel' });
+  });
+
+  test.each(['Cancel', 'Close'])('%s dismisses an idle modal', async name => {
+    render(PullImage, { closeCallback });
+
+    await userEvent.click(screen.getByRole('button', { name }));
+
+    expect(closeCallback).toHaveBeenCalledOnce();
+    expect(window.pullImage).not.toHaveBeenCalled();
+  });
+
+  test('Escape dismisses the modal after the image suggestions close', async () => {
+    render(PullImage, { closeCallback });
+
+    await userEvent.keyboard('{Escape}');
+    expect(closeCallback).not.toHaveBeenCalled();
+
+    await userEvent.keyboard('{Escape}');
+
+    expect(closeCallback).toHaveBeenCalledOnce();
+  });
+
+  test('A backdrop click dismisses an idle modal', async () => {
+    render(PullImage, { closeCallback });
+
+    await userEvent.click(screen.getByLabelText('fade-bg'));
+
+    expect(closeCallback).toHaveBeenCalledOnce();
+  });
+
+  test('An active pull keeps the modal open', async () => {
+    const pendingPull = Promise.withResolvers<void>();
+    vi.mocked(window.pullImage).mockReturnValue(pendingPull.promise);
+    render(PullImage, { closeCallback, imageToPull: 'some-valid-image' });
+
+    await userEvent.click(screen.getByRole('button', { name: 'Pull image' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }));
+    await userEvent.keyboard('{Escape}');
+    await userEvent.click(screen.getByLabelText('fade-bg'));
+
+    expect(closeCallback).not.toHaveBeenCalled();
+    expect(screen.getByRole('textbox', { name: 'Image to pull' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeEnabled();
+
+    pendingPull.resolve();
+    await screen.findByRole('button', { name: 'Done' });
+  });
+
+  test('No container engine disables the pull action', async () => {
+    providerInfos.set([]);
+    const gotoSpy = vi.spyOn(router, 'goto');
+    render(PullImage, { closeCallback });
+
+    expect(screen.getByRole('button', { name: 'Pull image' })).toBeDisabled();
+    expect(screen.queryByRole('textbox', { name: 'Image to pull' })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('link', { name: 'Settings > Resources' }));
+    expect(closeCallback).toHaveBeenCalledOnce();
+    expect(gotoSpy).toHaveBeenCalledWith('/preferences/resources');
+  });
+
   test('Expect that textbox is available and button is displayed', async () => {
-    render(PullImage);
+    render(PullImage, { closeCallback });
 
     const entry = screen.getByPlaceholderText('Image name');
     expect(entry).toBeInTheDocument();
@@ -112,7 +181,7 @@ describe('PullImage', () => {
   });
 
   test('Expect that whitespace does not enable button', async () => {
-    render(PullImage, { imageToPull: '   ' });
+    render(PullImage, { closeCallback, imageToPull: '   ' });
 
     const button = screen.getByRole('button', { name: buttonText });
     expect(button).toBeInTheDocument();
@@ -120,7 +189,7 @@ describe('PullImage', () => {
   });
 
   test('Expect that valid entry enables button', async () => {
-    render(PullImage, { imageToPull: 'some-valid-image' });
+    render(PullImage, { closeCallback, imageToPull: 'some-valid-image' });
 
     const button = screen.getByRole('button', { name: buttonText });
     expect(button).toBeInTheDocument();
@@ -128,7 +197,7 @@ describe('PullImage', () => {
   });
 
   test('Expect that valid entry enables button after user input', async () => {
-    render(PullImage);
+    render(PullImage, { closeCallback });
 
     const button = screen.getByRole('button', { name: buttonText });
     expect(button).toBeInTheDocument();
@@ -142,16 +211,26 @@ describe('PullImage', () => {
   });
 
   test('Expect that action is displayed', async () => {
-    render(PullImage);
+    render(PullImage, { closeCallback });
 
     const regButton = 'Manage registries';
-    const button = screen.getByRole('button', { name: regButton });
+    const button = screen.getByRole('link', { name: regButton });
     expect(button).toBeInTheDocument();
     expect(button).toBeEnabled();
   });
 
+  test('Manage registries closes the modal and opens settings', async () => {
+    const gotoSpy = vi.spyOn(router, 'goto');
+    render(PullImage, { closeCallback });
+
+    await userEvent.click(screen.getByRole('link', { name: 'Manage registries' }));
+
+    expect(closeCallback).toHaveBeenCalledOnce();
+    expect(gotoSpy).toHaveBeenCalledWith('/preferences/registries');
+  });
+
   test('Expect that pull image is reporting an error', async () => {
-    render(PullImage, { imageToPull: 'image-does-not-exist' });
+    render(PullImage, { closeCallback, imageToPull: 'image-does-not-exist' });
 
     // first call to pull image throw an error
     vi.mocked(window.pullImage).mockRejectedValueOnce(new Error('Image does not exists'));
@@ -166,14 +245,14 @@ describe('PullImage', () => {
   });
 
   test('Expect that focus is in `Image to pull` field after page is opened', async () => {
-    render(PullImage);
+    render(PullImage, { closeCallback });
 
     const pullImageInput = screen.getByRole('textbox', { name: 'Image to pull' });
     expect(pullImageInput.matches(':focus')).toBe(true);
   });
 
   test('Expect that you can type an image name and hit Enter', async () => {
-    render(PullImage);
+    render(PullImage, { closeCallback });
 
     // first call to pull image throw an error
     vi.mocked(window.pullImage).mockRejectedValueOnce(new Error('Image does not exists'));
@@ -189,7 +268,7 @@ describe('PullImage', () => {
   // pull image with error and then pull image with success
   // error message should not be displayed anymore
   test('Expect that pull image is reporting an error only if invalid', async () => {
-    const renderResult = render(PullImage, { imageToPull: 'image-does-not-exist' });
+    const renderResult = render(PullImage, { closeCallback, imageToPull: 'image-does-not-exist' });
 
     // first call to pull image throw an error
     vi.mocked(window.pullImage).mockRejectedValueOnce(new Error('Image does not exists'));
@@ -235,7 +314,7 @@ describe('PullImage', () => {
       },
     ]);
 
-    render(PullImage, { imageToPull: 'my.registry.com/image-to-pull' });
+    render(PullImage, { closeCallback, imageToPull: 'my.registry.com/image-to-pull' });
 
     // first call to pull image throw an error
     vi.mocked(window.pullImage).mockRejectedValueOnce(new Error('Image does not exists'));
@@ -257,7 +336,7 @@ describe('PullImage', () => {
     vi.mocked(window.getCancellableTokenSource).mockResolvedValue(9876);
     vi.mocked(window.pullImage).mockReturnValue(pendingPull.promise);
 
-    render(PullImage, { imageToPull: 'some-valid-image' });
+    render(PullImage, { closeCallback, imageToPull: 'some-valid-image' });
 
     const pullImagebutton = screen.getByRole('button', { name: 'Pull image' });
     await userEvent.click(pullImagebutton);
@@ -278,11 +357,15 @@ describe('PullImage', () => {
     await vi.waitFor(() => {
       expect(screen.getByRole('button', { name: 'Pull image' })).toBeInTheDocument();
     });
+    expect(closeCallback).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(closeCallback).toHaveBeenCalledOnce();
   });
 
   test('Expect cancellation errors are not displayed as pull errors', async () => {
     vi.mocked(window.pullImage).mockRejectedValueOnce(new Error('Request aborted'));
-    render(PullImage, { imageToPull: 'some-valid-image' });
+    render(PullImage, { closeCallback, imageToPull: 'some-valid-image' });
 
     const pullImagebutton = screen.getByRole('button', { name: 'Pull image' });
     await userEvent.click(pullImagebutton);
@@ -296,7 +379,7 @@ describe('PullImage', () => {
 
 test('Expect if no docker.io shortname to use Podman FQN', async () => {
   vi.mocked(window.resolveShortnameImage).mockResolvedValue(['someregistry/test1']);
-  render(PullImage);
+  render(PullImage, { closeCallback });
 
   const textbox = screen.getByRole('textbox', { name: 'Image to pull' });
   await userEvent.click(textbox);
@@ -316,7 +399,7 @@ test('Expect if no docker.io shortname to use Podman FQN', async () => {
 
 test('Expect if no docker.io shortname but checkbox not checked to use docker hub', async () => {
   vi.mocked(window.resolveShortnameImage).mockResolvedValue(['someregistry/test1']);
-  render(PullImage);
+  render(PullImage, { closeCallback });
 
   const textbox = screen.getByRole('textbox', { name: 'Image to pull' });
   await userEvent.click(textbox);
@@ -334,7 +417,7 @@ test('Expect if no docker.io shortname but checkbox not checked to use docker hu
 
 test('Expect if docker.io shortname exists to not use Podman FQN', async () => {
   vi.mocked(window.resolveShortnameImage).mockResolvedValue(['someregistry/test1', 'docker.io/test1']);
-  render(PullImage);
+  render(PullImage, { closeCallback });
 
   const textbox = screen.getByRole('textbox', { name: 'Image to pull' });
   await userEvent.click(textbox);
@@ -352,7 +435,7 @@ test('Expect if docker.io shortname exists to not use Podman FQN', async () => {
 });
 
 test('Expect not to check not shortname images', async () => {
-  render(PullImage);
+  render(PullImage, { closeCallback });
 
   const textbox = screen.getByRole('textbox', { name: 'Image to pull' });
   await userEvent.click(textbox);
@@ -362,7 +445,7 @@ test('Expect not to check not shortname images', async () => {
 });
 
 test('Expect latest tag warning is displayed when the image does not have latest tag', async () => {
-  render(PullImage);
+  render(PullImage, { closeCallback });
 
   vi.mocked(window.listImageTagsInRegistry).mockResolvedValue(['other']);
   await userEvent.keyboard('my-registry/image-without-latest[Enter]');
@@ -374,7 +457,7 @@ test('Expect latest tag warning is displayed when the image does not have latest
 });
 
 test('Expect latest tag warning is not displayed when the image has latest tag', async () => {
-  render(PullImage);
+  render(PullImage, { closeCallback });
 
   vi.mocked(window.listImageTagsInRegistry).mockResolvedValue(['latest', 'other']);
   await userEvent.keyboard('my-registry/image-without-latest[Enter]');
@@ -385,15 +468,18 @@ test('Expect latest tag warning is not displayed when the image has latest tag',
 });
 
 test('Expect done, details and run actions after a successful pull', async () => {
-  render(PullImage, { imageToPull: 'some-valid-image' });
+  render(PullImage, { closeCallback, imageToPull: 'some-valid-image' });
 
   const pullImagebutton = screen.getByRole('button', { name: 'Pull image' });
   await userEvent.click(pullImagebutton);
 
-  const footer = await screen.findByRole('contentinfo');
+  const footer = screen.getByRole('dialog', { name: 'Pull image' });
   expect(within(footer).getByRole('button', { name: 'View details' })).toBeInTheDocument();
   expect(within(footer).getByRole('button', { name: 'Run' })).toBeInTheDocument();
-  expect(within(footer).getByRole('button', { name: 'Close' })).toBeInTheDocument();
+  expect(within(footer).getByRole('button', { name: 'Done' })).toBeInTheDocument();
+
+  await userEvent.click(within(footer).getByRole('button', { name: 'Done' }));
+  expect(closeCallback).toHaveBeenCalledOnce();
 });
 
 test('Expect details action to open pulled image summary route', async () => {
@@ -408,7 +494,7 @@ test('Expect details action to open pulled image summary route', async () => {
       engineName: 'podman',
     } as never,
   ]);
-  render(PullImage, { imageToPull: 'docker.io/alpine' });
+  render(PullImage, { closeCallback, imageToPull: 'docker.io/alpine' });
 
   const pullImagebutton = screen.getByRole('button', { name: 'Pull image' });
   await userEvent.click(pullImagebutton);
@@ -422,6 +508,7 @@ test('Expect details action to open pulled image summary route', async () => {
     expect(gotoSpy).toHaveBeenLastCalledWith(
       '/images/sha256:1234567890123/podman/ZG9ja2VyLmlvL2xpYnJhcnkvYWxwaW5lOmxhdGVzdA==/summary',
     );
+    expect(closeCallback).toHaveBeenCalledOnce();
   });
 });
 
@@ -435,7 +522,7 @@ test('Expect run action to set image info and go to run page', async () => {
     engineName: 'podman',
   } as unknown as ImageInfo;
   vi.mocked(window.listImages).mockResolvedValue([image]);
-  render(PullImage, { imageToPull: 'docker.io/alpine' });
+  render(PullImage, { closeCallback, imageToPull: 'docker.io/alpine' });
 
   const pullImagebutton = screen.getByRole('button', { name: 'Pull image' });
   await userEvent.click(pullImagebutton);
@@ -451,11 +538,12 @@ test('Expect run action to set image info and go to run page', async () => {
         id: image.Id,
       },
     });
+    expect(closeCallback).toHaveBeenCalledOnce();
   });
 });
 
 test('input component should not raise an error when the input is valid', async () => {
-  const pullImage = render(PullImage);
+  const pullImage = render(PullImage, { closeCallback });
 
   vi.mocked(window.listImageTagsInRegistry).mockResolvedValue(['latest', 'other']);
   await userEvent.keyboard('my-registry/image');
@@ -468,7 +556,7 @@ test('input component should not raise an error when the input is valid', async 
 });
 
 test('input component should raise an error when the input is not valid', async () => {
-  const pullImage = render(PullImage);
+  const pullImage = render(PullImage, { closeCallback });
 
   vi.mocked(window.listImageTagsInRegistry).mockResolvedValue([]);
   await userEvent.keyboard('my-registry/image');
@@ -481,7 +569,7 @@ test('input component should raise an error when the input is not valid', async 
 });
 
 test('input component should raise an error when the input is not valid - error', async () => {
-  const pullImage = render(PullImage);
+  const pullImage = render(PullImage, { closeCallback });
 
   vi.mocked(window.listImageTagsInRegistry).mockImplementation(() => {
     throw Error('Error msg');
@@ -516,7 +604,7 @@ describe('container connections', () => {
 
     expect(containerConnections).toHaveLength(1);
 
-    const { queryByRole } = render(PullImage);
+    const { queryByRole } = render(PullImage, { closeCallback });
     const dropdown = queryByRole('button', { name: 'Container Engine' });
     expect(dropdown).toBeNull();
   });
@@ -524,14 +612,14 @@ describe('container connections', () => {
   test('multiple container connection should display a dropdown', async () => {
     providerInfos.set([MULTI_CONNECTIONS]);
 
-    const { getByRole } = render(PullImage);
+    const { getByRole } = render(PullImage, { closeCallback });
     const dropdown = getByRole('button', { name: 'Container Engine' });
     expect(dropdown).toBeEnabled();
   });
 
   test('providerInfos update should be reactive', async () => {
     // default should only have one connection
-    const { queryByRole } = render(PullImage);
+    const { queryByRole } = render(PullImage, { closeCallback });
     const dropdown = queryByRole('button', { name: 'Container Engine' });
     expect(dropdown).toBeNull();
 
@@ -548,7 +636,7 @@ describe('container connections', () => {
   test('default provider when multiple should be the first one', async () => {
     providerInfos.set([MULTI_CONNECTIONS]);
 
-    const { getByRole } = render(PullImage);
+    const { getByRole } = render(PullImage, { closeCallback });
     const dropdown = getByRole('button', { name: 'Container Engine' });
     expect(dropdown).toBeEnabled();
     // default to the first one
@@ -561,7 +649,7 @@ describe('container connections', () => {
     providerInfos.set([MULTI_CONNECTIONS]);
 
     // render
-    const { getByRole } = render(PullImage);
+    const { getByRole } = render(PullImage, { closeCallback });
     const dropdown = getByRole('button', { name: 'Container Engine' });
     expect(dropdown).toBeEnabled();
 
@@ -618,7 +706,7 @@ describe('Preferred Registries', () => {
   });
 
   test('should load preferred registries from configuration on mount', async () => {
-    render(PullImage);
+    render(PullImage, { closeCallback });
 
     await vi.waitFor(() => {
       expect(window.getConfigurationValue).toHaveBeenCalledWith(
@@ -650,7 +738,7 @@ describe('Preferred Registries', () => {
       }
     });
 
-    render(PullImage);
+    render(PullImage, { closeCallback });
 
     const textbox = screen.getByRole('textbox', { name: 'Image to pull' });
     await userEvent.click(textbox);
@@ -678,7 +766,7 @@ describe('Preferred Registries', () => {
       ]; // duplicate from API
     });
 
-    render(PullImage);
+    render(PullImage, { closeCallback });
 
     const textbox = screen.getByRole('textbox', { name: 'Image to pull' });
     await userEvent.click(textbox);
@@ -697,7 +785,7 @@ describe('Preferred Registries', () => {
       return [{ name: 'nginx', description: '', star_count: 0, is_official: false }];
     });
 
-    render(PullImage);
+    render(PullImage, { closeCallback });
 
     const textbox = screen.getByRole('textbox', { name: 'Image to pull' });
     await userEvent.click(textbox);
@@ -718,7 +806,7 @@ describe('Preferred Registries', () => {
       return [{ name: 'nginx', description: '', star_count: 0, is_official: false }];
     });
 
-    render(PullImage);
+    render(PullImage, { closeCallback });
 
     const textbox = screen.getByRole('textbox', { name: 'Image to pull' });
     await userEvent.click(textbox);
@@ -742,7 +830,7 @@ describe('Preferred Registries', () => {
       }
     });
 
-    render(PullImage);
+    render(PullImage, { closeCallback });
 
     const textbox = screen.getByRole('textbox', { name: 'Image to pull' });
     await userEvent.click(textbox);

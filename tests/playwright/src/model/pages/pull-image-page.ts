@@ -40,28 +40,23 @@ export class PullImagePage extends BasePage {
 
   constructor(page: Page) {
     super(page);
-    this.heading = page.getByRole('heading', {
-      name: 'Pull an Image From a Registry',
+    this.tabContent = page.getByRole('dialog', { name: 'Pull image', exact: true });
+    this.heading = this.tabContent.getByRole('heading', {
+      name: 'Pull image',
     });
-    this.pullImageButton = page.getByRole('button', { name: 'Pull' });
-    this.closeLink = page.getByRole('link', { name: 'Close' });
-    this.backToImagesLink = page.getByRole('link', {
-      name: 'Go back to Images',
-    });
-    this.manageRegistriesButton = page.getByRole('button', {
+    this.pullImageButton = this.tabContent.getByRole('button', { name: 'Pull image', exact: true });
+    this.closeLink = this.tabContent.getByRole('button', { name: 'Close', exact: true });
+    this.backToImagesLink = this.closeLink;
+    this.manageRegistriesButton = this.tabContent.getByRole('link', {
       name: 'Manage registries',
     });
-    this.imageNameInput = page.getByLabel('Image to Pull');
-    this.tabContent = page.getByRole('region', {
-      name: 'Tab Content',
-      exact: true,
-    });
+    this.imageNameInput = this.tabContent.getByLabel('Image to pull');
     this.searchResultsTable = this.tabContent.getByRole('row');
-    this.closeButton = this.tabContent.getByRole('button', { name: 'Close', exact: true });
+    this.closeButton = this.tabContent.getByRole('button', { name: 'Done', exact: true });
     this.cancelButton = this.tabContent.getByRole('button', { name: 'Cancel', exact: true });
     this.viewDetailsButton = this.tabContent.getByRole('button', { name: 'View details', exact: true });
     this.runButton = this.tabContent.getByRole('button', { name: 'Run', exact: true });
-    this.pullErrorMessage = page.getByRole('alert').filter({ hasText: 'no running provider' });
+    this.pullErrorMessage = this.tabContent.getByRole('alert').filter({ hasText: 'no running provider' });
   }
 
   async pullImage(imageName: string, tag = '', timeout = 60_000): Promise<ImagesPage> {
@@ -109,7 +104,7 @@ export class PullImagePage extends BasePage {
       await playExpect(this.cancelButton).toBeEnabled();
       await this.cancelButton.click();
       await playExpect(this.pullImageButton).toBeEnabled();
-      await playExpect(this.cancelButton).not.toBeVisible();
+      await playExpect(this.cancelButton).toBeEnabled();
       return this;
     });
   }
