@@ -1,6 +1,6 @@
 <script lang="ts">
 import { Spinner } from '@podman-desktop/ui-svelte';
-import { onDestroy } from 'svelte';
+import { onDestroy, type Snippet } from 'svelte';
 
 import type { TypeaheadGroupedItems, TypeaheadHeadings, TypeaheadItem } from './Typeahead';
 
@@ -14,6 +14,8 @@ interface Props {
   name?: string;
   error?: boolean;
   resultItems?: TypeaheadItem[];
+  resultsHeight?: string;
+  description?: Snippet;
   onInputChange?: (s: string) => Promise<void>;
   onChange?: (value: string) => void;
   onEnter?: () => void;
@@ -31,6 +33,8 @@ let {
   name,
   error = false,
   resultItems = [],
+  resultsHeight,
+  description,
   onInputChange,
   onChange,
   onEnter,
@@ -256,7 +260,9 @@ function onWindowClick(e: Event): void {
 
 <svelte:window on:click={onWindowClick} />
 <div
-  class="flex flex-row grow items-center px-1 py-1 group bg-[var(--pd-input-field-bg)] border-[1px] border-transparent {className}"
+  class="flex flex-row items-center px-1 py-1 group bg-[var(--pd-input-field-bg)] border-[1px] border-transparent {className}"
+  class:grow={!resultsHeight}
+  class:shrink-0={!!resultsHeight}
   class:not(focus-within):hover:bg-[var(--pd-input-field-hover-bg)]={!disabled}
   class:focus-within:bg-[var(--pd-input-field-focused-bg)]={!disabled}
   class:focus-within:rounded-md={!disabled}
@@ -290,11 +296,17 @@ function onWindowClick(e: Event): void {
     <Spinner size="1em" />
   {/if}
 </div>
+{#if description}
+  <div class="shrink-0">
+    {@render description()}
+  </div>
+{/if}
 {#if opened && items.length > 0}
   <div
     role="row"
     bind:this={list}
-    class="max-h-80 overflow-auto bg-[var(--pd-content-card-bg)] border-[var(--pd-input-field-hover-stroke)] border-[1px]">
+    style:height={resultsHeight}
+    class="min-h-0 max-h-80 overflow-auto bg-[var(--pd-content-card-bg)] border-[var(--pd-input-field-hover-stroke)] border-[1px]">
     {#each items as item, i (i)}
       {#if itemHeadings[i]}
         {#each itemHeadings[i] as heading, index (index)}
@@ -311,4 +323,7 @@ function onWindowClick(e: Event): void {
         }}>{item}</button>
     {/each}
   </div>
+{:else if resultsHeight}
+  <!-- Reserve the results space so searches and selections do not shift the form. -->
+  <div class="min-h-0" style:height={resultsHeight}></div>
 {/if}

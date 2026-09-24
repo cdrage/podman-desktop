@@ -102,6 +102,22 @@ const buttonText = 'Pull image';
 const closeCallback = vi.fn();
 
 describe('PullImage', () => {
+  test('Keeps image validation above the search results', async () => {
+    vi.mocked(window.searchImageInRegistry).mockResolvedValue([
+      { name: 'alpine', description: '', star_count: 0, is_official: true },
+    ]);
+    render(PullImage, { closeCallback });
+
+    const input = screen.getByRole('textbox', { name: 'Image to pull' });
+    await userEvent.type(input, 'alpine');
+    const results = await screen.findByRole('row');
+
+    await userEvent.clear(input);
+    const error = screen.getByText('Please enter a value');
+
+    expect(error.compareDocumentPosition(results) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   test('Displays the pull controls in a modal', () => {
     render(PullImage, { closeCallback });
 

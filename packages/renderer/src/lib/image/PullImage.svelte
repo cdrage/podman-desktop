@@ -312,6 +312,11 @@ function validateImageName(image: string): void {
 }
 
 async function onImageChange(image: string): Promise<void> {
+  // Return the log space to suggestions when the user edits the image after a pull.
+  if (!pullInProgress && !pullFinished) {
+    showLogs = false;
+  }
+
   validateImageName(image);
   await resolveShortname();
   await searchLatestTag();
@@ -465,52 +470,14 @@ async function searchFunction(value: string): Promise<void> {
         Start a container engine in <Link on:click={gotoResources}>Settings &gt; Resources</Link> to pull an image.
       </p>
     {:else}
-      <div class="flex flex-col space-y-5">
-        <p>
+      <!-- Keep the form within the dialog body. Only results and logs scroll. -->
+      <div class="flex h-72 min-h-0 flex-col gap-3">
+        <p class="shrink-0">
           Specify preferred registries in <Link on:click={gotoManageRegistries}>Manage registries</Link>.
         </p>
 
-        <div>
-          <label for="imageName" class="block mb-2 font-medium text-[var(--pd-modal-text)]">Image to pull</label>
-          <div class="flex flex-col">
-            <Typeahead
-              id="imageName"
-              name="imageName"
-              placeholder="Image name"
-              onInputChange={searchFunction}
-              resultItems={searchResult}
-              compare={sortResults}
-              onChange={onImageChange}
-              onEnter={pullImage}
-              disabled={pullFinished || pullInProgress}
-              error={!isValidName}
-              required
-              initialFocus />
-            {#if selectedProviderConnection?.type === 'podman' && podmanFQN}
-              <div class="absolute mt-2 ml-[-18px] self-start">
-                <Tooltip tip="Shortname images will be pulled from Docker Hub" topRight>
-                  <Icon size="1.1x" class="text-[var(--pd-state-warning)]" icon={faTriangleExclamation} />
-                </Tooltip>
-              </div>
-            {/if}
-          </div>
-          {#if selectedProviderConnection?.type === 'podman' && podmanFQN}
-            <Checkbox
-              class="pt-2"
-              bind:checked={usePodmanFQN}
-              title="Use Podman FQN"
-              disabled={pullFinished || pullInProgress}>Use Podman FQN for shortname image</Checkbox>
-          {/if}
-          {#if imageNameInvalid}
-            <ErrorMessage error={imageNameInvalid} />
-          {/if}
-          {#if latestTagMessage}
-            <WarningMessage error={latestTagMessage} />
-          {/if}
-        </div>
-
         {#if providerConnections.length > 1}
-          <div>
+          <div class="shrink-0">
             <label for="providerChoice" class="block mb-2 font-medium text-[var(--pd-modal-text)]">Container Engine</label>
             <ContainerConnectionDropdown
               id="providerChoice"
@@ -521,7 +488,50 @@ async function searchFunction(value: string): Promise<void> {
           </div>
         {/if}
 
-        <div class="h-40" hidden={!showLogs}>
+        <div class="flex min-h-0 flex-col" class:flex-1={!showLogs}>
+          <label for="imageName" class="block mb-2 shrink-0 font-medium text-[var(--pd-modal-text)]">Image to pull</label>
+          <div class="flex min-h-0 flex-col" class:flex-1={!showLogs}>
+            <Typeahead
+              id="imageName"
+              name="imageName"
+              placeholder="Image name"
+              onInputChange={searchFunction}
+              resultItems={searchResult}
+              resultsHeight={showLogs ? undefined : '100%'}
+              compare={sortResults}
+              onChange={onImageChange}
+              onEnter={pullImage}
+              disabled={pullFinished || pullInProgress}
+              error={!isValidName}
+              required
+              initialFocus>
+              {#snippet description()}
+                {#if selectedProviderConnection?.type === 'podman' && podmanFQN}
+                  <Checkbox
+                    class="py-2"
+                    bind:checked={usePodmanFQN}
+                    title="Use Podman FQN"
+                    disabled={pullFinished || pullInProgress}>Use Podman FQN for shortname image</Checkbox>
+                {/if}
+                {#if imageNameInvalid}
+                  <ErrorMessage error={imageNameInvalid} />
+                {/if}
+                {#if latestTagMessage}
+                  <WarningMessage error={latestTagMessage} />
+                {/if}
+              {/snippet}
+            </Typeahead>
+            {#if selectedProviderConnection?.type === 'podman' && podmanFQN}
+              <div class="absolute mt-2 ml-[-18px] self-start">
+                <Tooltip tip="Shortname images will be pulled from Docker Hub" topRight>
+                  <Icon size="1.1x" class="text-[var(--pd-state-warning)]" icon={faTriangleExclamation} />
+                </Tooltip>
+              </div>
+            {/if}
+          </div>
+        </div>
+
+        <div class="min-h-0 flex-1" hidden={!showLogs}>
           <TerminalWindow class="h-full" bind:terminal={logsPull} />
         </div>
       </div>
