@@ -45,6 +45,7 @@ import ImageColumnName from './ImageColumnName.svelte';
 import ImageColumnStatus from './ImageColumnStatus.svelte';
 import ImageEmptyScreen from './ImageEmptyScreen.svelte';
 import type { ImageInfoUI } from './ImageInfoUI';
+import ImportContainersImages from './ImportContainersImages.svelte';
 import NoContainerEngineEmptyScreen from './NoContainerEngineEmptyScreen.svelte';
 
 interface Props {
@@ -58,6 +59,7 @@ $effect(() => {
 });
 
 let selectedEnvironment = $state('');
+let showImportModal = $state(false);
 let images: ImageInfoUI[] = $state([]);
 
 // Filter images by selected environment
@@ -194,7 +196,11 @@ function gotoPullImage(): void {
 }
 
 function importImage(): void {
-  router.goto('/images/import');
+  showImportModal = true;
+}
+
+function closeImportModal(): void {
+  showImportModal = false;
 }
 
 function loadImages(): void {
@@ -310,6 +316,10 @@ function label(item: ImageInfoUI): string {
   return item.name;
 }
 </script>
+
+{#if showImportModal}
+  <ImportContainersImages closeCallback={closeImportModal} />
+{/if}
 
 <NavPage bind:searchTerm={searchTerm} title="images">
   {#snippet additionalActions()}

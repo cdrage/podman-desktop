@@ -432,14 +432,31 @@ describe('Contributions', () => {
   );
 });
 
-test('Expect importImage button redirects to image import page', async () => {
-  const goToMock = vi.spyOn(router, 'goto');
-  render(ImagesList);
-  const btnImportImage = screen.getByRole('button', { name: 'Import Image' });
-  expect(btnImportImage).toBeInTheDocument();
+test('Import opens a modal over the image list without navigation', async () => {
+  const goToMock = vi.spyOn(router, 'goto').mockImplementation(() => {});
+  goToMock.mockClear();
+  vi.mocked(window.openDialog).mockResolvedValue(['path/file.tar']);
+  render(ImagesList, { searchTerm: 'hello' });
 
+  const btnImportImage = screen.getByRole('button', { name: 'Import Image' });
   await userEvent.click(btnImportImage);
-  expect(goToMock).toBeCalledWith('/images/import');
+
+  screen.getByRole('dialog', { name: 'Import containers' });
+  expect(goToMock).not.toHaveBeenCalled();
+
+  await userEvent.click(screen.getByRole('button', { name: 'Add images to import' }));
+  expect(screen.getByRole('textbox', { name: 'container image path' })).toHaveValue('path/file.tar');
+
+  await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  expect(btnImportImage).toHaveFocus();
+
+  // A new import starts with no files, without resetting the list filter.
+  await userEvent.click(btnImportImage);
+  expect(screen.getByRole('button', { name: 'Import containers' })).toBeDisabled();
+  expect(screen.queryByRole('textbox', { name: 'container image path' })).not.toBeInTheDocument();
+  expect(screen.getByRole('textbox', { name: 'search images' })).toHaveValue('hello');
+  goToMock.mockRestore();
 });
 
 test('expect redirect to saveImage page when at least one image is selected and the multiple save button is clicked', async () => {
