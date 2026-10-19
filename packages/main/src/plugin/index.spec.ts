@@ -49,6 +49,7 @@ import { ImageRegistry } from './image-registry.js';
 import type { LoggerWithEnd } from './index.js';
 import { PluginSystem } from './index.js';
 import { LockedConfiguration } from './locked-configuration.js';
+import { MacManagedConfiguration } from './mac-managed-configuration.js';
 import type { MessageBox } from './message-box.js';
 import { NavigationManager } from './navigation/navigation-manager.js';
 import { ProviderRegistry } from './provider-registry.js';
@@ -402,12 +403,18 @@ test('configurationRegistry propagated', async () => {
   const lockedConfigurationMock = {
     getContent: vi.fn().mockResolvedValue({}),
   } as unknown as LockedConfiguration;
+  const macManagedConfigurationMock = {
+    getContent: vi.fn().mockResolvedValue({ defaults: {}, user: {}, locked: [] }),
+  } as unknown as MacManagedConfiguration;
   const notifications: NotificationCardOptions[] = [];
 
   inversifyContainer.bind<ApiSenderType>(ApiSenderType).toConstantValue(apiSenderMock);
   inversifyContainer.bind<Directories>(Directories).toConstantValue(directoriesMock);
   inversifyContainer.bind<DefaultConfiguration>(DefaultConfiguration).toConstantValue(defaultConfigurationMock);
   inversifyContainer.bind<LockedConfiguration>(LockedConfiguration).toConstantValue(lockedConfigurationMock);
+  inversifyContainer
+    .bind<MacManagedConfiguration>(MacManagedConfiguration)
+    .toConstantValue(macManagedConfigurationMock);
 
   const configurationRegistry = await pluginSystem.initConfigurationRegistry(
     inversifyContainer,
