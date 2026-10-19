@@ -24,6 +24,7 @@ import * as extensionApi from '@podman-desktop/api';
 
 import { getPodmanCli } from '/@/utils/podman-cli';
 
+import { setupDefaultConnections } from './default-connections';
 import { PodmanRemoteSshTunnel } from './podman-remote-ssh-tunnel';
 
 interface ConnectionListFormatJson {
@@ -83,6 +84,9 @@ export class PodmanRemoteConnections {
   }
 
   async start(): Promise<void> {
+    // Apply presets before the first remote discovery cycle.
+    await setupDefaultConnections();
+
     // need to watch the configuration to enable again the monitoring
     extensionApi.configuration.onDidChangeConfiguration(async e => {
       if (e.affectsConfiguration(PODMAN_CONFIGURATION_REMOTE_ENABLED_KEY)) {

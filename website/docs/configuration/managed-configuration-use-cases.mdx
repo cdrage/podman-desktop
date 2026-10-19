@@ -130,6 +130,55 @@ This configuration maps to the [registries.conf](https://github.com/containers/i
 }
 ```
 
+## Default remote Podman connections
+
+Podman Desktop creates the connections in `podman.system.connections.defaults` when the Podman extension starts.
+Each entry corresponds to `podman system connection add`.
+
+Existing connection names take precedence. Duplicate names create one connection.
+Changes to the defaults apply after a restart.
+
+SSH access and an active Podman socket are required on each remote host.
+The [remote access guide](/docs/podman/podman-remote) describes these prerequisites.
+
+### Connection properties
+
+All five properties are required.
+
+| Property   | Type   | Description                                                        |
+| ---------- | ------ | ------------------------------------------------------------------ |
+| `name`     | string | The name of the Podman connection                                  |
+| `identity` | string | The local private SSH key path. `~/` expands to the home directory |
+| `user`     | string | The SSH username                                                   |
+| `host`     | string | The hostname or IP address, with an optional SSH port              |
+| `socket`   | string | The absolute path to the Podman socket on the remote host          |
+
+### Example: Root and non-root connections
+
+The following example enables remote discovery and defines two connections in `default-settings.json`.
+
+```json title="default-settings.json"
+{
+  "podman.system.connections.remote": true,
+  "podman.system.connections.defaults": [
+    {
+      "name": "shared-build-server",
+      "identity": "~/.ssh/id_ed25519",
+      "user": "developer",
+      "host": "build.example.com",
+      "socket": "/run/user/1000/podman/podman.sock"
+    },
+    {
+      "name": "shared-root-server",
+      "identity": "~/.ssh/id_ed25519",
+      "user": "root",
+      "host": "root.example.com:2222",
+      "socket": "/run/podman/podman.sock"
+    }
+  ]
+}
+```
+
 ## Additional resources
 
 - [Configuring a managed user environment](/docs/configuration/managed-configuration)

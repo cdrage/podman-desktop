@@ -109,6 +109,63 @@ test('should check connections if configuration is enabled', async () => {
   }
 });
 
+test('creates presets before remote discovery', async () => {
+  vi.mocked(extensionApi.configuration.getConfiguration).mockReturnValue({
+    get: (key: string) => {
+      if (key === 'system.connections.remote') {
+        return true;
+      }
+      if (key === 'system.connections.defaults') {
+        return [
+          {
+            name: 'build-server',
+            identity: '/keys/id_ed25519',
+            user: 'developer',
+            host: 'build.example.com',
+            socket: '/run/user/1000/podman/podman.sock',
+          },
+        ];
+      }
+      return undefined;
+    },
+  } as unknown as extensionApi.Configuration);
+  vi.mocked(extensionApi.process.exec).mockResolvedValue({ stdout: '[]' } as extensionApi.RunResult);
+
+  const connections = new TestPodmanRemoteConnections(extensionContext, provider);
+  const refresh = vi.spyOn(connections, 'refreshRemoteConnections').mockResolvedValue();
+
+  try {
+    await connections.start();
+
+    expect(extensionApi.process.exec).toHaveBeenNthCalledWith(
+      1,
+      'podman',
+      ['system', 'connection', 'list', '--format', 'json'],
+      {},
+    );
+    expect(extensionApi.process.exec).toHaveBeenNthCalledWith(
+      2,
+      'podman',
+      [
+        'system',
+        'connection',
+        'add',
+        '--identity',
+        '/keys/id_ed25519',
+        '--',
+        'build-server',
+        'ssh://developer@build.example.com/run/user/1000/podman/podman.sock',
+      ],
+      {},
+    );
+    expect(vi.mocked(extensionApi.process.exec).mock.invocationCallOrder[1]).toBeLessThan(
+      refresh.mock.invocationCallOrder[0],
+    );
+  } finally {
+    connections.stop();
+  }
+});
+
 test('hasConnections should return false when no connections exist', () => {
   const remoteConnections = new TestPodmanRemoteConnections(extensionContext, provider);
   expect(remoteConnections.hasConnections()).toBe(false);
