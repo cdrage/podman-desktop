@@ -432,14 +432,32 @@ describe('Contributions', () => {
   );
 });
 
-test('Expect importImage button redirects to image import page', async () => {
+test('opens the import modal without leaving Images and resets it after cancellation', async () => {
   const goToMock = vi.spyOn(router, 'goto');
+  goToMock.mockClear();
   render(ImagesList);
   const btnImportImage = screen.getByRole('button', { name: 'Import Image' });
-  expect(btnImportImage).toBeInTheDocument();
 
   await userEvent.click(btnImportImage);
-  expect(goToMock).toBeCalledWith('/images/import');
+
+  const dialog = screen.getByRole('dialog', { name: 'Import containers' });
+  expect(within(dialog).getByRole('button', { name: 'Cancel' })).toHaveFocus();
+  expect(goToMock).not.toHaveBeenCalled();
+  screen.getByRole('heading', { name: /^images$/i });
+  vi.mocked(window.openDialog).mockResolvedValue(['path/file.tar']);
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Add images to import' }));
+  within(dialog).getByRole('cell', { name: 'file.tar' });
+
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+
+  expect(screen.queryByRole('dialog', { name: 'Import containers' })).not.toBeInTheDocument();
+  expect(btnImportImage).toHaveFocus();
+  expect(goToMock).not.toHaveBeenCalled();
+
+  await userEvent.click(btnImportImage);
+
+  screen.getByRole('dialog', { name: 'Import containers' });
+  expect(screen.queryByRole('table', { name: 'Containers to import' })).not.toBeInTheDocument();
 });
 
 test('expect redirect to saveImage page when at least one image is selected and the multiple save button is clicked', async () => {

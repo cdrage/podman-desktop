@@ -42,6 +42,12 @@ test('dialog should be visible and have basic styling', async () => {
   expect(titleElem.parentElement).toHaveClass('text-[var(--pd-modal-header-text)]');
 });
 
+test('passes the large size to the modal', () => {
+  render(Dialog, { title: 'A dialog', onclose: vi.fn(), size: 'large' });
+
+  expect(screen.getByRole('dialog')).toHaveStyle({ maxWidth: '768px' });
+});
+
 test('bg click should trigger close event', async () => {
   const closeMock = vi.fn();
   render(Dialog, { title: 'A dialog', onclose: closeMock });

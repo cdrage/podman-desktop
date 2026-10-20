@@ -207,6 +207,8 @@ export class ImagesPage extends MainPage {
     return test.step(`Import container image from ${archivePath}`, async () => {
       await playExpect(this.importImageButton).toBeEnabled();
       await this.importImageButton.click();
+      const dialog = this.page.getByRole('dialog', { name: 'Import containers', exact: true });
+      await playExpect(dialog).toBeVisible();
       await playExpect(this.addImagesToImportButton).toBeVisible();
 
       await withMockedOpenFileDialog([archivePath], async () => {
@@ -220,6 +222,7 @@ export class ImagesPage extends MainPage {
 
       await playExpect(this.confirmImportContainersButton).toBeEnabled();
       await this.confirmImportContainersButton.click();
+      await playExpect(dialog).toBeHidden({ timeout });
       await playExpect(this.heading).toBeVisible({ timeout });
       return this;
     });

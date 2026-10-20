@@ -8,6 +8,7 @@ const dispatch = createEventDispatcher();
 interface Props {
   name?: string;
   top?: boolean;
+  size?: 'default' | 'large';
   ignoreFocusOut?: boolean;
   onclose?: () => void;
   children?: Snippet;
@@ -17,6 +18,7 @@ let modal: HTMLDivElement;
 let {
   name = 'drop-down-dialog',
   top = false,
+  size = 'default',
   ignoreFocusOut = false,
   onclose = (): void => {
     dispatch('close');
@@ -67,6 +69,7 @@ function handleMousedown(e: MouseEvent): void {
     class:translate-y-[-5%]={!top}
     class:my-[32px]={top}
     class="bg-[var(--pd-modal-bg)] z-50 rounded-xl overflow-visible w-[calc(200vw-4rem)] h-fit max-w-[32rem] max-h-[calc(100vh-4rem)] border-[1px] border-[var(--pd-modal-border)]"
+    style:max-width={size === 'large' ? 'min(48rem, calc(100vw - 4rem))' : undefined}
     role="dialog"
     aria-label={name}
     aria-modal="true"

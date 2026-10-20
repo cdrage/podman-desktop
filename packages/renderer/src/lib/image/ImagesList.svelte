@@ -45,6 +45,7 @@ import ImageColumnName from './ImageColumnName.svelte';
 import ImageColumnStatus from './ImageColumnStatus.svelte';
 import ImageEmptyScreen from './ImageEmptyScreen.svelte';
 import type { ImageInfoUI } from './ImageInfoUI';
+import ImportContainersImages from './ImportContainersImages.svelte';
 import NoContainerEngineEmptyScreen from './NoContainerEngineEmptyScreen.svelte';
 
 interface Props {
@@ -193,8 +194,14 @@ function gotoPullImage(): void {
   router.goto('/images/pull');
 }
 
+let importModal = $state(false);
+
 function importImage(): void {
-  router.goto('/images/import');
+  importModal = true;
+}
+
+function closeImportModal(): void {
+  importModal = false;
 }
 
 function loadImages(): void {
@@ -387,3 +394,7 @@ function label(item: ImageInfoUI): string {
   </div>
   {/snippet}
 </NavPage>
+
+{#if importModal}
+  <ImportContainersImages closeCallback={closeImportModal} />
+{/if}

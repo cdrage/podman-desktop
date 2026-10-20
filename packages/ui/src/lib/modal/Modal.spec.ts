@@ -33,6 +33,20 @@ test('modal should be visible', async () => {
   expect(dialog).toBeDefined();
 });
 
+test('supports a wider modal that stays within the viewport', () => {
+  render(Modal, { size: 'large' });
+
+  expect(screen.getByRole('dialog')).toHaveStyle({ maxWidth: '768px' });
+});
+
+test('keeps the default modal width', () => {
+  render(Modal);
+
+  const dialog = screen.getByRole('dialog');
+  expect(dialog).toHaveClass('max-w-[32rem]');
+  expect(dialog.style.maxWidth).toBe('');
+});
+
 test('bg click should trigger close event', async () => {
   const closeMock = vi.fn();
   render(Modal, { onclose: closeMock });
