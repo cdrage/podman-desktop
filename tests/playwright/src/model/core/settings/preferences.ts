@@ -20,10 +20,10 @@ enum PreferenceLabels {
   APPEARANCE = 'Appearance',
   FEEDBACK_DIALOG = 'Dialog',
   TOAST = 'Toast',
-  ZOOM_LEVEL = 'Zoom Level',
-  EXIT_ON_CLOSE = ' Exit On Close',
-  LINE_HEIGHT = 'Line Height',
-  APP_UPDATE = 'App Update',
+  ZOOM_LEVEL = 'Zoom level',
+  EXIT_ON_CLOSE = 'Exit on close',
+  LINE_HEIGHT = 'Line height',
+  APP_UPDATE = 'App update',
 }
 
 export class Preferences {

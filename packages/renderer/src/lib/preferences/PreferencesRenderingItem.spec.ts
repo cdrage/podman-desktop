@@ -80,10 +80,36 @@ test('record should have short title by default', async () => {
   });
 
   await vi.waitFor(() => {
-    const element = getByText('Foo Bar');
+    const element = getByText('Foo bar');
     expect(element).toBeDefined();
     expect(element).toHaveClass('font-semibold');
   });
+});
+
+test.each([
+  ['preferences.followUI', 'Follow UI'],
+  ['preferences.providerTimeout', 'Provider timeout'],
+  ['preferences.HTTPProxy', 'HTTP proxy'],
+  ['preferences.useHTTPProxy', 'Use HTTP proxy'],
+  ['preferences.proxyURL', 'Proxy URL'],
+  ['preferences.WSL2Enabled', 'WSL2 enabled'],
+  ['preferences.UI', 'UI'],
+  ['preferences.timeout', 'Timeout'],
+])('formats %s as %s', (id, expectedTitle) => {
+  const { getByText } = render(PreferencesRenderingItem, {
+    record: { ...EXPERIMENTAL_RECORD, id },
+  });
+
+  expect(getByText(expectedTitle)).toHaveClass('font-semibold');
+});
+
+test('full title preserves acronyms across id segments', () => {
+  const { getByText } = render(PreferencesRenderingItem, {
+    record: { ...EXPERIMENTAL_RECORD, id: 'preferences.HTTPProxy.followUI' },
+    title: 'full',
+  });
+
+  expect(getByText('Preferences HTTP proxy follow UI')).toHaveClass('font-semibold');
 });
 
 test.each(['short', 'full'] as const)('displayName overrides the %s title and follows record updates', async title => {
@@ -97,7 +123,7 @@ test.each(['short', 'full'] as const)('displayName overrides the %s title and fo
   expect(queryByText('Path to Podman Binary')).not.toBeInTheDocument();
 
   await rerender({ record: EXPERIMENTAL_RECORD, title });
-  expect(getByText(title === 'short' ? 'Foo Bar' : 'Hello world foo Bar')).toHaveClass('font-semibold');
+  expect(getByText(title === 'short' ? 'Foo bar' : 'Hello world foo bar')).toHaveClass('font-semibold');
   expect(queryByText('Binary location')).not.toBeInTheDocument();
 });
 
@@ -108,7 +134,7 @@ test('props title full should use full record id', async () => {
   });
 
   await vi.waitFor(() => {
-    const element = getByText('Hello world foo Bar');
+    const element = getByText('Hello world foo bar');
     expect(element).toBeDefined();
     expect(element).toHaveClass('font-semibold');
   });

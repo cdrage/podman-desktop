@@ -21,11 +21,17 @@ const { record, title = 'short' }: Props = $props();
 let showResetButton = $state(false);
 let resetToDefault = $state(false);
 
-// add space from camel case and upper case on the first letter
-function startCase(str: string): string {
-  return str.replace(/([A-Z])/g, ' $1').replace(/^./, str => {
-    return str.toUpperCase();
-  });
+function sentenceCase(str: string): string {
+  // Split camel case and acronym boundaries, such as followUI and HTTPProxy.
+  const words = str
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2')
+    .split(' ');
+
+  return words
+    .map(word => (/^[A-Z0-9]+$/.test(word) ? word : word.toLowerCase()))
+    .join(' ')
+    .replace(/^./, letter => letter.toUpperCase());
 }
 const recordUI = $derived.by(() => {
   const id = record.id;
@@ -49,7 +55,7 @@ const recordUI = $derived.by(() => {
   const breadCrumbUI = breadCrumb.replace(/\./g, ' > ').concat(':');
 
   return {
-    title: record.displayName ?? startCase(key),
+    title: record.displayName ?? sentenceCase(key),
     breadCrumb: breadCrumbUI,
     description: record.description,
     markdownDescription: record.markdownDescription,

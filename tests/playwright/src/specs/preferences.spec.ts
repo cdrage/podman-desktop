@@ -16,6 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import { Preferences } from '/@/model/core/settings/preferences';
 import { PreferencesPage } from '/@/model/pages/preferences-page';
 import { expect as playExpect, test } from '/@/utility/fixtures';
 
@@ -32,6 +33,32 @@ test.afterAll(async ({ runner }) => {
 
 test.describe('Preferences text persistence validation', { tag: '@macos_sanity' }, () => {
   test.describe.configure({ mode: 'serial' });
+
+  test('Preference row locators match generated labels', async ({ page, navigationBar }) => {
+    const settingsBar = await navigationBar.openSettings();
+    await settingsBar.preferencesTab.click();
+
+    const preferencesPage = new PreferencesPage(page);
+    await playExpect(preferencesPage.heading).toBeVisible();
+
+    for (const label of [
+      Preferences.Labels.ZOOM_LEVEL,
+      Preferences.Labels.EXIT_ON_CLOSE,
+      Preferences.Labels.APP_UPDATE,
+      Preferences.Labels.LINE_HEIGHT,
+    ]) {
+      const row = preferencesPage.getPreferenceRowByName(label);
+      await playExpect(row).toBeAttached();
+      await row.scrollIntoViewIfNeeded();
+      await playExpect(row).toBeVisible();
+    }
+
+    const timeoutRow = preferencesPage.getPreferenceRowByName('Provider timeout');
+    await timeoutRow.scrollIntoViewIfNeeded();
+    await playExpect(timeoutRow).toBeVisible();
+    await preferencesPage.screenshot({ name: 'preferences-sentence-case' });
+  });
+
   test('Check preferences text persistence', async ({ page, navigationBar }) => {
     //Open Settings/Preferences page
     const settingsBar = await navigationBar.openSettings();
