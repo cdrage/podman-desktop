@@ -1,0 +1,150 @@
+/**********************************************************************
+ * Copyright (C) 2026 Red Hat, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ***********************************************************************/
+
+import { get, writable } from 'svelte/store';
+
+export interface HostTerminalTab {
+  id: number;
+  name: string;
+  cwd?: string;
+}
+
+export enum TerminalTabPlacement {
+  Before = 'before',
+  After = 'after',
+}
+
+export const hostTerminalTabs = writable<HostTerminalTab[]>([]);
+export const activeHostTerminalTabId = writable<number | undefined>();
+export const hostTerminalPanelVisible = writable<boolean>(false);
+
+const HEIGHT_KEY = 'host-terminal-panel-height';
+const storedHeight = sessionStorage.getItem(HEIGHT_KEY);
+export const hostTerminalPanelHeight = writable<number>(storedHeight ? Number.parseInt(storedHeight, 10) : 300);
+hostTerminalPanelHeight.subscribe(h => sessionStorage.setItem(HEIGHT_KEY, String(h)));
+
+const CWD_KEY = 'host-terminal-working-directory';
+const storedCwd = localStorage.getItem(CWD_KEY);
+const RECENT_FOLDERS_KEY = 'host-terminal-recent-folders';
+const MAX_RECENT_FOLDERS = 8;
+
+function readRecentFolders(): string[] {
+  try {
+    const stored: unknown = JSON.parse(localStorage.getItem(RECENT_FOLDERS_KEY) ?? '[]');
+    if (Array.isArray(stored)) {
+      return [
+        ...new Set(stored.filter((folder): folder is string => typeof folder === 'string' && folder.length > 0)),
+      ].slice(0, MAX_RECENT_FOLDERS);
+    }
+  } catch {
+    // Ignore invalid saved history so the terminal remains available.
+  }
+  return [];
+}
+
+export const recentTerminalFolders = writable<string[]>(readRecentFolders());
+recentTerminalFolders.subscribe(folders => localStorage.setItem(RECENT_FOLDERS_KEY, JSON.stringify(folders)));
+
+function rememberTerminalFolder(folder: string | undefined): void {
+  if (!folder) {
+    return;
+  }
+
+  recentTerminalFolders.update(folders =>
+    [folder, ...folders.filter(entry => entry !== folder)].slice(0, MAX_RECENT_FOLDERS),
+  );
+}
+
+export const terminalWorkingDirectory = writable<string | undefined>(storedCwd ?? undefined);
+terminalWorkingDirectory.subscribe(d => {
+  if (d) {
+    localStorage.setItem(CWD_KEY, d);
+    rememberTerminalFolder(d);
+  } else {
+    localStorage.removeItem(CWD_KEY);
+  }
+});
+
+let tabCounter = 0;
+let nextTabId = 1;
+
+export function getNextTabId(): number {
+  return nextTabId++;
+}
+
+export function addTerminalTab(id: number, options?: { name?: string; cwd?: string }): void {
+  tabCounter++;
+  const tab: HostTerminalTab = {
+    id,
+    name: options?.name ?? `Terminal ${tabCounter}`,
+    // Keyboard shortcuts use the default folder unless the caller supplies one.
+    cwd: options && 'cwd' in options ? options.cwd : get(terminalWorkingDirectory),
+  };
+  hostTerminalTabs.update(tabs => [...tabs, tab]);
+  rememberTerminalFolder(tab.cwd);
+  activeHostTerminalTabId.set(id);
+}
+
+export function removeTerminalTab(id: number): void {
+  hostTerminalTabs.update(tabs => {
+    const idx = tabs.findIndex(t => t.id === id);
+    if (idx < 0) {
+      return tabs;
+    }
+
+    const filtered = tabs.filter(t => t.id !== id);
+    if (get(activeHostTerminalTabId) !== id) {
+      return filtered;
+    }
+
+    if (filtered.length > 0) {
+      const nextIdx = Math.min(idx, filtered.length - 1);
+      activeHostTerminalTabId.set(filtered[nextIdx]!.id);
+    } else {
+      tabCounter = 0;
+      activeHostTerminalTabId.set(undefined);
+    }
+    return filtered;
+  });
+}
+
+export function clearAllTerminalTabs(): void {
+  hostTerminalTabs.set([]);
+  activeHostTerminalTabId.set(undefined);
+  tabCounter = 0;
+}
+
+export function moveTerminalTab(id: number, targetId: number, placement: TerminalTabPlacement): void {
+  hostTerminalTabs.update(tabs => {
+    const tab = tabs.find(entry => entry.id === id);
+    if (!tab || id === targetId || !tabs.some(entry => entry.id === targetId)) {
+      return tabs;
+    }
+
+    // Keep tab identities and the active session intact when the order changes.
+    const reordered = tabs.filter(entry => entry.id !== id);
+    const targetIndex = reordered.findIndex(entry => entry.id === targetId);
+    const insertIndex = placement === TerminalTabPlacement.Before ? targetIndex : targetIndex + 1;
+    reordered.splice(insertIndex, 0, tab);
+    return reordered;
+  });
+}
+
+export function updateTerminalTabName(id: number, name: string): void {
+  hostTerminalTabs.update(tabs => tabs.map(t => (t.id === id ? { ...t, name } : t)));
+}

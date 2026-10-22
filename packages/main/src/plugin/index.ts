@@ -223,6 +223,7 @@ import { Featured } from './featured/featured.js';
 import { FeedbackHandler } from './feedback-handler.js';
 import { FilesystemMonitoring } from './filesystem-monitoring.js';
 import { HelpMenu } from './help-menu/help-menu.js';
+import { HostTerminalService } from './host-terminal-service.js';
 import { IconRegistry } from './icon-registry.js';
 import { ImageCheckerImpl } from './image-checker.js';
 import { ImageFilesRegistry } from './image-files-registry.js';
@@ -775,6 +776,11 @@ export class PluginSystem {
     container.bind<TerminalInit>(TerminalInit).toSelf().inSingletonScope();
     const terminalInit = container.get<TerminalInit>(TerminalInit);
     terminalInit.init();
+
+    container.bind<HostTerminalService>(HostTerminalService).toSelf().inSingletonScope();
+    const hostTerminalService = container.get<HostTerminalService>(HostTerminalService);
+    this.getWebContentsSender().on('dom-ready', () => hostTerminalService.disposeAll());
+    app.on('will-quit', () => hostTerminalService.disposeAll());
 
     container.bind<Welcome>(Welcome).toSelf().inSingletonScope();
     const welcome = container.get<Welcome>(Welcome);
@@ -1645,6 +1651,25 @@ export class PluginSystem {
         callback?.close();
       },
     );
+
+    this.ipcHandle(
+      'host-terminal:create',
+      async (_listener, callbackId: number, options?: { cwd?: string }): Promise<number> => {
+        return hostTerminalService.create(this.getWebContentsSender(), callbackId, options);
+      },
+    );
+
+    this.ipcHandle('host-terminal:write', async (_listener, id: number, data: string): Promise<void> => {
+      hostTerminalService.write(id, data);
+    });
+
+    this.ipcHandle('host-terminal:resize', async (_listener, id: number, cols: number, rows: number): Promise<void> => {
+      hostTerminalService.resize(id, cols, rows);
+    });
+
+    this.ipcHandle('host-terminal:close', async (_listener, id: number): Promise<void> => {
+      hostTerminalService.close(id);
+    });
 
     const containerProviderRegistryAttachContainerSendCallback = new Map<number, (param: string) => void>();
     this.ipcHandle(

@@ -837,6 +837,62 @@ export function initExposure(): void {
     },
   );
 
+  // callbacks for host terminal
+  let hostTerminalCallbackId = 0;
+  const hostTerminalCallbacks = new Map<
+    number,
+    { onData: (data: string) => void; onExit: (exitCode: number) => void }
+  >();
+
+  contextBridge.exposeInMainWorld(
+    'hostTerminalCreate',
+    async (
+      onData: (data: string) => void,
+      onExit: (exitCode: number) => void,
+      options?: { cwd?: string },
+    ): Promise<number> => {
+      const id = ++hostTerminalCallbackId;
+      hostTerminalCallbacks.set(id, { onData, onExit });
+      try {
+        return await ipcInvoke('host-terminal:create', id, options);
+      } catch (error) {
+        hostTerminalCallbacks.delete(id);
+        throw error;
+      }
+    },
+  );
+
+  contextBridge.exposeInMainWorld('hostTerminalWrite', async (id: number, data: string): Promise<void> => {
+    return ipcInvoke('host-terminal:write', id, data);
+  });
+
+  contextBridge.exposeInMainWorld(
+    'hostTerminalResize',
+    async (id: number, cols: number, rows: number): Promise<void> => {
+      return ipcInvoke('host-terminal:resize', id, cols, rows);
+    },
+  );
+
+  contextBridge.exposeInMainWorld('hostTerminalClose', async (id: number): Promise<void> => {
+    await ipcInvoke('host-terminal:close', id);
+    hostTerminalCallbacks.delete(id);
+  });
+
+  ipcRenderer.on('host-terminal:onData', (_, id: number, data: string) => {
+    const callback = hostTerminalCallbacks.get(id);
+    if (callback) {
+      callback.onData(data);
+    }
+  });
+
+  ipcRenderer.on('host-terminal:onExit', (_, id: number, exitCode: number) => {
+    const callback = hostTerminalCallbacks.get(id);
+    if (callback) {
+      callback.onExit(exitCode);
+      hostTerminalCallbacks.delete(id);
+    }
+  });
+
   // callbacks for attachContainer
   let onDataCallbacksAttachContainerId = 0;
   const onDataCallbacksAttachContainer = new Map<
